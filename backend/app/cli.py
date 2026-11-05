@@ -10,12 +10,15 @@ def register_cli(app: Flask) -> None:
     @app.cli.command("init-db")
     @click.option("--drop", is_flag=True, help="Drop all tables first (deletes all data!).")
     def init_db(drop: bool):
-        """Create the database (MySQL) and all tables."""
+        """Create the database (MySQL) and all tables, or upgrade an older database."""
+        from .upgrade import upgrade_database
+
         _create_mysql_database_if_missing(app)
         if drop:
             click.confirm("This deletes ALL data. Continue?", abort=True)
             db.drop_all()
-        db.create_all()
+        for change in upgrade_database():
+            click.echo(f"Upgraded: {change}")
         click.echo("Database tables are ready.")
 
     @app.cli.command("seed-demo")

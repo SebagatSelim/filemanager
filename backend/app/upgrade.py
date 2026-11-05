@@ -1,0 +1,45 @@
+"""Bring an existing database up to date with the current models.
+
+`db.create_all()` creates missing tables but never changes tables that already exist.
+When we add a column or a new status later, this function adds it to databases created
+by an older version, so team members do not have to delete their data.
+It is safe to run many times: it only changes what is missing.
+"""
+import logging
+
+import sqlalchemy as sa
+
+from .extensions import db
+from .models import FILE_STATUSES
+
+log = logging.getLogger(__name__)
+
+# Columns added after v0.1: (table, column, SQL type)
+NEW_COLUMNS = [
+    ("files", "deleted_at", "DATETIME NULL"),
+    ("files", "deleted_from_path", "VARCHAR(500) NULL"),
+]
+
+
+def upgrade_database() -> list[str]:
+    """Create missing tables/columns. Returns a list of the changes made."""
+    db.create_all()
+    changes = []
+    inspector = sa.inspect(db.engine)
+    with db.engine.begin() as conn:
+        for table, column, sql_type in NEW_COLUMNS:
+            existing = {c["name"] for c in inspector.get_columns(table)}
+            if column not in existing:
+                conn.execute(sa.text(f"ALTER TABLE {table} ADD COLUMN {column} {sql_type}"))
+                changes.append(f"added {table}.{column}")
+
+        # MySQL stores the allowed statuses in the column type, so add the new 'DELETED' status there too.
+        if db.engine.dialect.name == "mysql":
+            status = next(c for c in inspector.get_columns("files") if c["name"] == "status")
+            if "DELETED" not in getattr(status["type"], "enums", []):
+                values = ", ".join(f"'{s}'" for s in FILE_STATUSES)
+                conn.execute(sa.text(f"ALTER TABLE files MODIFY COLUMN status ENUM({values}) NOT NULL DEFAULT 'UPLOADED'"))
+                changes.append("added the DELETED file status")
+    for change in changes:
+        log.info("Database upgrade: %s", change)
+    return changes

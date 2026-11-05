@@ -11,7 +11,8 @@ BigIntPK = sa.BigInteger().with_variant(sa.Integer(), "sqlite")
 LongText = sa.Text().with_variant(mysql.MEDIUMTEXT(), "mysql")
 
 FILE_TYPES = ("PDF", "DOCX", "TXT", "PNG", "JPG")
-FILE_STATUSES = ("UPLOADED", "PROCESSING", "AWAITING_REVIEW", "STORED", "FAILED")
+# DELETED = in the Recycle bin (can be restored or deleted for good).
+FILE_STATUSES = ("UPLOADED", "PROCESSING", "AWAITING_REVIEW", "STORED", "FAILED", "DELETED")
 EXTRACTION_METHODS = ("PYMUPDF", "PYTHON_DOCX", "TESSERACT_OCR", "PLAIN_TEXT")
 DUPLICATE_TYPES = ("EXACT", "SIMILAR")
 AUDIT_ACTIONS = (
@@ -70,6 +71,9 @@ class File(db.Model):
     error_message = db.Column(db.String(500))
     uploaded_at = db.Column(db.DateTime, nullable=False, default=utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=utcnow, onupdate=utcnow)
+    # Recycle bin: when the file was deleted and which folder it came from (so it can be restored there).
+    deleted_at = db.Column(db.DateTime)
+    deleted_from_path = db.Column(db.String(500))
 
     folder = db.relationship("Folder", lazy="joined")
     meta = db.relationship(
