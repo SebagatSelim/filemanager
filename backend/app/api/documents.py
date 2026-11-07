@@ -8,19 +8,22 @@ from flask_jwt_extended import jwt_required
 
 from ..errors import APIError, validation_error
 from ..extensions import db
-from ..models import AuditLog, DocumentMetadata, File, utcnow
+from ..models import DocumentMetadata, File, utcnow
 from ..serializers import document_json, suggestions_json
 from ..services import audit, pipeline
 from ..services.folders import clean_segments, ensure_folder_path, folder_paths, path_string
 from ..services.index import bump
+from ..services.recommend import recommend_folders
 from ..services.search import find_similar
 from ..services.storage import get_storage
+from ..services.trash import delete_forever, remove_stored_files
 from ..services.validation import CANONICAL_EXTENSION, validate_upload
 from .helpers import current_user_id, get_owned_file, json_body, optional_str
 
 bp = Blueprint("documents", __name__)
 
-SORTS = {"uploaded_at": File.uploaded_at, "name": sa.func.coalesce(File.generated_name, File.original_name)}
+SORTS = {"uploaded_at": File.uploaded_at, "updated_at": File.updated_at,
+         "name": sa.func.coalesce(File.generated_name, File.original_name)}
 KNOWN_EXTENSIONS = {"pdf", "docx", "txt", "png", "jpg", "jpeg"}
 
 
@@ -39,6 +42,11 @@ def _similar_documents(file: File) -> list[dict]:
         return []
     names = {f.file_id: f.display_name for f in File.query.filter(File.file_id.in_([m[0] for m in matches]))}
     return [{"file_id": fid, "name": names.get(fid), "similarity": score} for fid, score in matches]
+
+
+def _not_in_recycle_bin(file: File) -> None:
+    if file.status == "DELETED":
+        raise APIError(409, "IN_RECYCLE_BIN", "This document is in the Recycle bin. Restore it first.")
 
 
 def _clean_filename(name: str, file_type: str) -> str:
@@ -105,7 +113,7 @@ def upload():
     allow_duplicate = str(request.form.get("allow_duplicate", "false")).lower() in ("1", "true", "yes")
     if not allow_duplicate:
         existing = (File.query.filter(File.user_id == user_id, File.hash_value == checked.sha256,
-                                      File.status != "FAILED").order_by(File.file_id).first())
+                                      File.status.notin_(("FAILED", "DELETED"))).order_by(File.file_id).first())
         if existing:
             raise APIError(
                 409, "DUPLICATE_FILE", f'You already have this file: "{existing.display_name}".',
@@ -149,6 +157,8 @@ def analysis(file_id: int):
         "file_type": file.file_type,
         "suggestions": suggestions_json(file) if file.status in ("AWAITING_REVIEW", "STORED") else None,
         "similar_documents": _similar_documents(file) if file.status in ("AWAITING_REVIEW", "STORED") else [],
+        # AI folder recommendation: the best EXISTING folders for this file (plus a new one if nothing fits).
+        "folder_recommendations": recommend_folders(file) if file.status == "AWAITING_REVIEW" else [],
         "duplicate_of": document_json(file)["duplicate_of"],
         "error_message": file.error_message,
     })
@@ -160,6 +170,7 @@ def approve(file_id: int):
     file = get_owned_file(file_id)
     if file.status in ("UPLOADED", "PROCESSING"):
         raise APIError(409, "STILL_PROCESSING", "The document is still being analysed. Please wait a moment.")
+    _not_in_recycle_bin(file)
     data = json_body()
     if not str(data.get("filename") or "").strip():
         raise validation_error("Filename is required.", {"filename": "Required"})
@@ -180,6 +191,7 @@ def approve(file_id: int):
 @jwt_required()
 def reprocess(file_id: int):
     file = get_owned_file(file_id)
+    _not_in_recycle_bin(file)
     if file.status == "PROCESSING" and pipeline.is_running(file.file_id):
         raise APIError(409, "STILL_PROCESSING", "The document is already being analysed.")
     file.status, file.error_message, file.updated_at = "PROCESSING", None, utcnow()
@@ -198,7 +210,9 @@ def list_documents():
     query = File.query.filter(File.user_id == user_id)
 
     status = (args.get("status") or "STORED").upper()
-    if status != "ALL":
+    if status == "ALL":
+        query = query.filter(File.status != "DELETED")  # the Recycle bin has its own page
+    else:
         statuses = [s.strip() for s in status.split(",") if s.strip()]
         query = query.filter(File.status.in_(statuses))
     if args.get("folder_id"):
@@ -242,6 +256,7 @@ def get_document(file_id: int):
 @jwt_required()
 def update_document(file_id: int):
     file = get_owned_file(file_id)
+    _not_in_recycle_bin(file)
     data = json_body()
     changes = _apply_metadata(file, data)
     if changes:
@@ -270,17 +285,12 @@ def download(file_id: int):
 @bp.delete("/documents/<int:file_id>")
 @jwt_required()
 def delete_document(file_id: int):
+    """Delete a document for good (the Recycle bin uses POST /documents/<id>/trash instead)."""
     file = get_owned_file(file_id)
-    user_id, name, key = file.user_id, file.display_name, file.storage_key
-    AuditLog.query.filter_by(file_id=file.file_id).update({"file_id": None})
-    DocumentMetadata.query.filter_by(duplicate_of_file_id=file.file_id).update(
-        {"duplicate_of_file_id": None, "duplicate_type": None, "duplicate_score": None})
-    db.session.delete(file)
+    user_id, name = file.user_id, file.display_name
+    key = delete_forever(file)
     audit.record(user_id, "DELETE", None, name)
     db.session.commit()
-    try:
-        get_storage().delete(key)
-    except Exception:
-        current_app.logger.exception("Could not delete stored object %s", key)
+    remove_stored_files([key])
     bump(user_id)
     return "", 204
