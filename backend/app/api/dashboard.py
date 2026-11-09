@@ -61,6 +61,7 @@ def stats():
         "awaiting_review": status_counts["AWAITING_REVIEW"],
         "processing": status_counts["PROCESSING"] + status_counts["UPLOADED"],
         "failed": status_counts["FAILED"],
+        "in_recycle_bin": status_counts["DELETED"],
         "storage_used_bytes": int(sum(r.file_size_bytes for r in rows)),
         "storage_quota_bytes": current_app.config["STORAGE_QUOTA_MB"] * 1024 * 1024,
         "by_category": [{"category": c, "count": n} for c, n in by_category.most_common()],

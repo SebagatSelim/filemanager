@@ -38,6 +38,7 @@ def create_app(config_class=Config, **overrides) -> Flask:
     from .cli import register_cli
 
     register_cli(app)
+    _upgrade_database_once(app)
     _resume_unfinished_work_once(app)
     _security_headers(app)
     return app
@@ -50,6 +51,27 @@ def _register_jwt_errors() -> None:
     jwt.unauthorized_loader(lambda reason: unauthorized("Please sign in to continue."))
     jwt.invalid_token_loader(lambda reason: unauthorized("Your session is invalid. Please sign in again."))
     jwt.expired_token_loader(lambda header, payload: unauthorized("Your session has expired. Please sign in again."))
+
+
+def _upgrade_database_once(app: Flask) -> None:
+    """On the first request, add any new columns to a database made by an older version (see upgrade.py)."""
+    if app.config.get("TESTING"):
+        return
+    lock = threading.Lock()
+    done = []
+
+    @app.before_request
+    def _upgrade():
+        with lock:
+            if done:
+                return
+            done.append(True)
+            from .upgrade import upgrade_database
+
+            try:
+                upgrade_database()
+            except Exception:
+                app.logger.exception("Could not upgrade the database. Run: flask --app run.py init-db")
 
 
 def _resume_unfinished_work_once(app: Flask) -> None:
