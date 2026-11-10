@@ -10,7 +10,7 @@ from ..models import File
 from ..serializers import document_json
 from ..services import audit
 from ..services.folders import folder_paths
-from ..services.search import search
+from ..services.search import search, search_folders
 from .helpers import current_user_id, json_body
 
 bp = Blueprint("search", __name__)
@@ -44,4 +44,6 @@ def run_search():
 
     audit.record(user_id, "SEARCH", None, query)
     db.session.commit()
-    return jsonify({"query": query, "results": results, "took_ms": int((time.perf_counter() - started) * 1000)})
+    folders = search_folders(user_id, query, matches)
+    return jsonify({"query": query, "results": results, "folders": folders,
+                    "took_ms": int((time.perf_counter() - started) * 1000)})
