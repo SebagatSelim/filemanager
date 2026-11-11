@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import AuthShell from '../components/AuthShell';
 import PasswordInput from '../components/PasswordInput';
+import VerificationCodeStep from '../components/VerificationCodeStep';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { getApiError } from '../api/client';
@@ -22,6 +23,8 @@ export default function LoginPage() {
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // Set when the server emailed a sign-in code (two-step verification).
+  const [verification, setVerification] = useState(null);
   const emailRef = useRef(null);
   const passwordRef = useRef(null);
 
@@ -48,9 +51,13 @@ export default function LoginPage() {
 
     setSubmitting(true);
     try {
-      const user = await login(form.email, form.password);
-      toast.success(`Welcome back, ${getFirstName(user?.name, user?.email)}!`);
-      navigate(getRedirectTarget(state), { replace: true });
+      const result = await login(form.email, form.password);
+      if (result.verification) {
+        setVerification(result.verification);
+        setSubmitting(false);
+        return;
+      }
+      finishSignIn(result.user);
     } catch (err) {
       const error = getApiError(err);
       // Show the API's message; the server uses the same 401 for unknown email and wrong password.
@@ -60,6 +67,26 @@ export default function LoginPage() {
       setSubmitting(false);
     }
   };
+
+  function finishSignIn(user) {
+    toast.success(`Welcome back, ${getFirstName(user?.name, user?.email)}!`);
+    navigate(getRedirectTarget(state), { replace: true });
+  }
+
+  if (verification) {
+    return (
+      <AuthShell title="Check your email" subtitle="Two-step verification">
+        <VerificationCodeStep
+          verification={verification}
+          onVerified={finishSignIn}
+          onBack={() => {
+            setVerification(null);
+            setForm((f) => ({ ...f, password: '' }));
+          }}
+        />
+      </AuthShell>
+    );
+  }
 
   return (
     <AuthShell

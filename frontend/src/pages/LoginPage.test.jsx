@@ -10,6 +10,9 @@ vi.mock('../api/auth', () => ({
   login: vi.fn(),
   logout: vi.fn(),
   register: vi.fn(),
+  verifyLogin: vi.fn(),
+  verifyRegistration: vi.fn(),
+  resendCode: vi.fn(),
   getMe: vi.fn(() => new Promise(() => {})),
 }));
 
@@ -97,5 +100,54 @@ describe('LoginPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Invalid email or password.');
     expect(window.sessionStorage.getItem(TOKEN_KEY)).toBeNull();
     expect(screen.getByTestId('location')).toHaveTextContent('/login');
+  });
+
+  it('asks for the emailed code when two-step verification is on', async () => {
+    authApi.login.mockResolvedValue({
+      verification_required: true,
+      purpose: 'login',
+      email: 'alex@uni.edu',
+      sent_to: 'al**@uni.edu',
+      demo_code: '123456',
+    });
+    authApi.verifyLogin.mockResolvedValue({
+      access_token: 'jwt-otp',
+      expires_in: 1800,
+      user: { user_id: 1, name: 'Alex Chen', email: 'alex@uni.edu' },
+    });
+    const user = userEvent.setup();
+    renderLogin();
+    await user.type(screen.getByLabelText('Email address'), 'alex@uni.edu');
+    await user.type(screen.getByLabelText('Password'), 'Str0ng!Pass');
+    await user.click(screen.getByRole('button', { name: 'Sign in to FileAI' }));
+
+    expect(await screen.findByRole('heading', { name: 'Check your email' })).toBeInTheDocument();
+    expect(screen.getByText('al**@uni.edu')).toBeInTheDocument();
+    expect(window.sessionStorage.getItem(TOKEN_KEY)).toBeNull(); // not signed in yet
+
+    await user.click(screen.getByRole('button', { name: 'Verify and sign in' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Enter the 6-digit code');
+
+    await user.click(screen.getByRole('button', { name: 'Use it' })); // demo mode fills the code
+    await user.click(screen.getByRole('button', { name: 'Verify and sign in' }));
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(/^\/$/));
+    expect(authApi.verifyLogin).toHaveBeenCalledWith({ email: 'alex@uni.edu', code: '123456' });
+    expect(window.sessionStorage.getItem(TOKEN_KEY)).toBe('jwt-otp');
+  });
+
+  it('shows the error for a wrong code', async () => {
+    authApi.login.mockResolvedValue({ verification_required: true, purpose: 'login', email: 'alex@uni.edu' });
+    authApi.verifyLogin.mockRejectedValue({
+      response: { status: 400, data: { error: { code: 'WRONG_CODE', message: 'That code is not correct.' } } },
+    });
+    const user = userEvent.setup();
+    renderLogin();
+    await user.type(screen.getByLabelText('Email address'), 'alex@uni.edu');
+    await user.type(screen.getByLabelText('Password'), 'Str0ng!Pass');
+    await user.click(screen.getByRole('button', { name: 'Sign in to FileAI' }));
+    await user.type(await screen.findByLabelText('Verification code'), '999999');
+    await user.click(screen.getByRole('button', { name: 'Verify and sign in' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('That code is not correct.');
+    expect(window.sessionStorage.getItem(TOKEN_KEY)).toBeNull();
   });
 });
