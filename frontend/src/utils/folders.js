@@ -87,3 +87,9 @@ export function childNamesAt(tree = [], parentSegments = []) {
 export function countFolders(tree = []) {
   return flattenFolders(tree).length;
 }
+
+/** Number of documents in a folder including all of its subfolders. */
+export function countDocumentsDeep(folder) {
+  if (!folder) return 0;
+  return (folder.document_count || 0) + (folder.children || []).reduce((sum, child) => sum + countDocumentsDeep(child), 0);
+}

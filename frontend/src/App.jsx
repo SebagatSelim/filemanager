@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Route, Routes, useParams } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import AppLayout from './components/layout/AppLayout';
 import { LoadingState } from './components/Feedback';
 import ProtectedRoute from './routes/ProtectedRoute';
@@ -15,10 +15,17 @@ const ReviewPage = lazy(() => import('./pages/ReviewPage'));
 const ReviewQueuePage = lazy(() => import('./pages/ReviewQueuePage'));
 const UploadPage = lazy(() => import('./pages/UploadPage'));
 const SearchPage = lazy(() => import('./pages/SearchPage'));
-const FoldersPage = lazy(() => import('./pages/FoldersPage'));
+const MyFilesPage = lazy(() => import('./pages/MyFilesPage'));
+const RecycleBinPage = lazy(() => import('./pages/RecycleBinPage'));
 const CategoriesPage = lazy(() => import('./pages/CategoriesPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+
+/** The old "All Folders" page is now "My files": keep old links (/folders?folder=3) working. */
+function FoldersRedirect() {
+  const { search } = useLocation();
+  return <Navigate to={`/files${search}`} replace />;
+}
 
 /** Remount a page when its :id changes so no state leaks between documents. */
 function KeyedById({ component: Component }) {
@@ -44,7 +51,9 @@ export default function App() {
             <Route path="upload" element={<UploadPage />} />
             <Route path="search" element={<SearchPage />} />
             <Route path="review" element={<ReviewQueuePage />} />
-            <Route path="folders" element={<FoldersPage />} />
+            <Route path="files" element={<MyFilesPage />} />
+            <Route path="folders" element={<FoldersRedirect />} />
+            <Route path="recycle-bin" element={<RecycleBinPage />} />
             <Route path="categories" element={<CategoriesPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
