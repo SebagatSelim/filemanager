@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ConfidenceRing from '../components/ConfidenceRing';
 import ConfirmModal from '../components/ConfirmModal';
+import FolderSuggestions from '../components/FolderSuggestions';
 import MetadataFields, { mapApiFieldErrors } from '../components/MetadataFields';
 import { ConfidenceBadge, FileIcon, StatusBadge, isLowConfidence } from '../components/Badges';
 import { ErrorState, LoadingState } from '../components/Feedback';
@@ -31,6 +32,8 @@ const EMPTY_FORM = {
 /** Prefill from AI suggestions; without suggestions, derive sensible defaults from the original name. */
 export function buildReviewForm(analysis) {
   const s = analysis?.suggestions;
+  // The AI's best folder (an existing folder when one fits) comes first in folder_recommendations.
+  const bestFolder = analysis?.folder_recommendations?.[0]?.path;
   if (s) {
     return {
       title: s.title || '',
@@ -38,7 +41,11 @@ export function buildReviewForm(analysis) {
       category: s.category || '',
       subject: s.subject || '',
       document_type: s.document_type || '',
-      folder_path: s.suggested_folder_path?.length ? [...s.suggested_folder_path] : [''],
+      folder_path: bestFolder?.length
+        ? [...bestFolder]
+        : s.suggested_folder_path?.length
+          ? [...s.suggested_folder_path]
+          : [''],
       keywords: Array.isArray(s.keywords) ? [...s.keywords] : [],
       summary: s.summary || '',
     };
@@ -362,6 +369,13 @@ export default function ReviewPage() {
                   {formError}
                 </div>
               )}
+
+              <FolderSuggestions
+                recommendations={analysis.folder_recommendations}
+                selected={form.folder_path}
+                onPick={(path) => setField('folder_path', path)}
+                disabled={saving}
+              />
 
               <MetadataFields
                 values={form}
