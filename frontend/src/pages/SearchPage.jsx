@@ -4,7 +4,7 @@ import { CategoryBadge, FileIcon } from '../components/Badges';
 import { EmptyState, ErrorState, Skeleton } from '../components/Feedback';
 import { searchDocuments } from '../api/search';
 import { getApiError } from '../api/client';
-import { formatDate, formatNumber, toPercentInt } from '../utils/format';
+import { formatDate, formatNumber, plural, toPercentInt } from '../utils/format';
 import { displayPath } from '../utils/folders';
 
 const EXAMPLES = [
@@ -61,6 +61,39 @@ function ResultCard({ result }) {
         </div>
       </div>
     </Link>
+  );
+}
+
+/** Folders that match the search (teacher feedback: AI search should take you to the folder). */
+function FolderResults({ folders }) {
+  if (!folders.length) return null;
+  return (
+    <section className="mb-4" aria-label="Matching folders">
+      <h3 className="h6 fw-bold mb-2">
+        <i className="bi bi-folder2-open fa-folder-icon me-1" aria-hidden="true" />
+        Folders
+      </h3>
+      <div className="row g-2">
+        {folders.map((folder, index) => (
+          <div key={folder.folder_id} className="col-md-6 col-xl-4">
+            <Link to={`/files?folder=${folder.folder_id}`} className="fa-folder-result text-decoration-none">
+              <i className="bi bi-folder-fill fa-folder-icon fs-3" aria-hidden="true" />
+              <span className="min-w-0 flex-grow-1">
+                <span className="fw-semibold text-body d-block text-truncate">
+                  {folder.name}
+                  {index === 0 && <span className="badge rounded-pill text-bg-success ms-2">Best match</span>}
+                </span>
+                <span className="small text-muted d-block text-truncate">{displayPath(folder.path)}</span>
+                <span className="small text-muted">{plural(folder.document_count, 'document')}</span>
+              </span>
+              <span className="small fw-semibold text-nowrap">
+                Open <i className="bi bi-arrow-right" aria-hidden="true" />
+              </span>
+            </Link>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -126,9 +159,9 @@ export default function SearchPage() {
         <div className="fa-search-icon mx-auto mb-3" aria-hidden="true">
           <i className="bi bi-search" />
         </div>
-        <h2 className="h3 fw-bold mb-1">Semantic Document Search</h2>
+        <h2 className="h3 fw-bold mb-1">AI Search</h2>
         <p className="text-muted mb-4">
-          Describe what you need — FileAI understands context, not just keywords.
+          Describe what you need — FileAI finds the right files and folders by meaning, not just keywords.
         </p>
         <form className="fa-search-box mx-auto" role="search" onSubmit={submit}>
           <i className="bi bi-search text-muted" aria-hidden="true" />
@@ -138,7 +171,7 @@ export default function SearchPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder='Try "Find my Semester 1 Database assignment"'
-            aria-label="Search your documents in plain English"
+            aria-label="Search your files and folders in plain English"
             autoFocus={!q}
             maxLength={500}
           />
@@ -222,6 +255,8 @@ export default function SearchPage() {
               </div>
             )}
           </div>
+
+          <FolderResults folders={state.data.folders || []} />
 
           {visible.length ? (
             <div className="d-grid gap-3">

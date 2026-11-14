@@ -6,7 +6,8 @@ import MetadataFields, { mapApiFieldErrors } from '../components/MetadataFields'
 import Modal from '../components/Modal';
 import { CategoryBadge, ConfidenceBadge, FileIcon, KeywordChips, StatusBadge } from '../components/Badges';
 import { EmptyState, ErrorState, LoadingState } from '../components/Feedback';
-import { deleteDocument, getDocument, getDownloadUrl, updateDocument } from '../api/documents';
+import { getDocument, getDownloadUrl, updateDocument } from '../api/documents';
+import { moveToRecycleBin, restoreDocument } from '../api/trash';
 import { getApiError } from '../api/client';
 import { useAppConfig } from '../context/AppConfigContext';
 import { useToast } from '../context/ToastContext';
@@ -331,17 +332,29 @@ export default function DocumentDetailsPage() {
     }
   };
 
+  // Delete = move to the Recycle bin (it can be restored from there).
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      await deleteDocument(id);
-      toast.success(`${doc.name} was deleted.`);
+      await moveToRecycleBin(id);
+      toast.success(`${doc.name} was moved to the Recycle bin.`);
       refresh();
-      navigate('/documents', { replace: true });
+      navigate(doc.folder_id ? `/files?folder=${doc.folder_id}` : '/files', { replace: true });
     } catch (err) {
       toast.error(getApiError(err).message);
       setDeleting(false);
       setConfirmDelete(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    try {
+      await restoreDocument(id);
+      toast.success(`${doc.name} was restored.`);
+      refresh();
+      setReloadKey((k) => k + 1);
+    } catch (err) {
+      toast.error(getApiError(err).message);
     }
   };
 
@@ -368,7 +381,8 @@ export default function DocumentDetailsPage() {
 
   const segments = splitPath(doc.folder_path);
   const similar = doc.similar_documents || [];
-  const needsReview = doc.status && doc.status !== 'STORED';
+  const inRecycleBin = doc.status === 'DELETED';
+  const needsReview = doc.status && doc.status !== 'STORED' && !inRecycleBin;
 
   return (
     <div className="fa-page">
@@ -383,7 +397,7 @@ export default function DocumentDetailsPage() {
           {segments.map((segment, index) => (
             <li key={`${segment}-${index}`} className="breadcrumb-item">
               {index === segments.length - 1 && doc.folder_id ? (
-                <Link to={`/folders?folder=${doc.folder_id}`}>{segment}</Link>
+                <Link to={`/files?folder=${doc.folder_id}`}>{segment}</Link>
               ) : (
                 segment
               )}
@@ -394,6 +408,17 @@ export default function DocumentDetailsPage() {
           </li>
         </ol>
       </nav>
+
+      {inRecycleBin && (
+        <div className="alert alert-secondary d-flex flex-column flex-sm-row align-items-sm-center gap-2" role="status">
+          <i className="bi bi-trash3" aria-hidden="true" />
+          <div className="flex-grow-1 small">This document is in the Recycle bin.</div>
+          <button type="button" className="btn btn-sm btn-primary" onClick={handleRestore}>
+            <i className="bi bi-arrow-counterclockwise me-1" aria-hidden="true" />
+            Restore
+          </button>
+        </div>
+      )}
 
       {needsReview && (
         <div className="alert alert-warning d-flex flex-column flex-sm-row align-items-sm-center gap-2" role="status">
@@ -471,7 +496,7 @@ export default function DocumentDetailsPage() {
                       <dt>Folder</dt>
                       <dd>
                         {doc.folder_id ? (
-                          <Link to={`/folders?folder=${doc.folder_id}`}>{displayPath(doc.folder_path)}</Link>
+                          <Link to={`/files?folder=${doc.folder_id}`}>{displayPath(doc.folder_path)}</Link>
                         ) : (
                           displayPath(doc.folder_path)
                         )}
@@ -525,6 +550,7 @@ export default function DocumentDetailsPage() {
                     </div>
                   </dl>
 
+                  {!inRecycleBin && (
                   <div className="fa-actions-grid">
                     <button type="button" className="btn btn-light" onClick={startEdit}>
                       <i className="bi bi-pencil me-1" aria-hidden="true" />
@@ -552,9 +578,10 @@ export default function DocumentDetailsPage() {
                       onClick={() => setConfirmDelete(true)}
                     >
                       <i className="bi bi-trash3 me-1" aria-hidden="true" />
-                      Delete document
+                      Move to Recycle bin
                     </button>
                   </div>
+                  )}
                 </>
               ) : (
                 <form onSubmit={saveEdit} noValidate>
@@ -688,13 +715,14 @@ export default function DocumentDetailsPage() {
       <ConfirmModal
         show={confirmDelete}
         title="Delete this document?"
-        confirmLabel="Delete permanently"
+        confirmLabel="Move to Recycle bin"
         busy={deleting}
         onConfirm={handleDelete}
         onCancel={() => setConfirmDelete(false)}
         icon="bi-trash3"
       >
-        <strong>{doc.name}</strong> and its AI metadata will be permanently deleted. This can&apos;t be undone.
+        <strong>{doc.name}</strong> will be moved to the Recycle bin. You can restore it from there, or delete it for
+        good by emptying the Recycle bin.
       </ConfirmModal>
     </div>
   );
