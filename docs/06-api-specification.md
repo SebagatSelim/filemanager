@@ -44,8 +44,11 @@ The Flask backend in [`backend/`](../backend/README.md) implements every endpoin
 | Method | Path | Purpose | FR / UC |
 |---|---|---|---|
 | GET | `/health` | Status and client settings (public) | — |
-| POST | `/auth/register` | Create account | FR-01 / UC-01 |
-| POST | `/auth/login` | Log in, get JWT | FR-01 / UC-02 |
+| POST | `/auth/register` | Create account (emails a verification code when two-step verification is on) | FR-01 / UC-01 |
+| POST | `/auth/register/verify` | Check the code, create the account and sign in (v0.2) | FR-01 / UC-01 |
+| POST | `/auth/login` | Log in, get JWT (or email a sign-in code) | FR-01 / UC-02 |
+| POST | `/auth/login/verify` | Check the sign-in code, get JWT (v0.2) | FR-01 / UC-02 |
+| POST | `/auth/resend-code` | Send a new code (v0.2) | FR-01 |
 | POST | `/auth/logout` | End session (client discards token) | FR-01 |
 | GET | `/auth/me` | Current user | FR-01 |
 | POST | `/documents` | Upload a file | FR-02, FR-07, FR-08 / UC-03 |
@@ -56,11 +59,18 @@ The Flask backend in [`backend/`](../backend/README.md) implements every endpoin
 | GET | `/documents/{id}` | Document details + text preview + similar documents | UC-10 |
 | PATCH | `/documents/{id}` | Edit metadata, rename, move | UI 8.8 |
 | GET | `/documents/{id}/download` | Short-lived download/preview link | UC-10 |
-| DELETE | `/documents/{id}` | Delete document and stored file | UI 8.8 |
+| DELETE | `/documents/{id}` | Delete document and stored file for good | UI 8.8 |
+| POST | `/documents/{id}/trash` | Move to the Recycle bin (v0.2) | UI 8.8 |
+| POST | `/documents/{id}/restore` | Restore from the Recycle bin into its old folder (v0.2) | UI 8.8 |
+| GET | `/trash` | Documents in the Recycle bin (v0.2) | UI 8.8 |
+| DELETE | `/trash` | Empty the Recycle bin (v0.2) | UI 8.8 |
 | GET | `/files/{token}/{filename}` | Serve a file from a signed link (local storage only; the filename is cosmetic) | UC-10 |
 | POST | `/search` | Natural-language search | FR-06 / UC-09 |
 | GET | `/folders` | Folder tree with document counts | FR-05 |
 | POST | `/folders` | Create folder | FR-05 |
+| PATCH | `/folders/{id}` | Rename folder (v0.2) | FR-05 |
+| DELETE | `/folders/{id}` | Delete folder + subfolders; documents go to the Recycle bin (v0.2) | FR-05 |
+| GET | `/folders/{id}/summary` | AI summary of everything in the folder (v0.2) | FR-04 |
 | GET | `/categories` | Categories with document counts | FR-03 |
 | GET | `/dashboard/stats` | Dashboard numbers, chart data, activity | UI 8.4 |
 | GET | `/users/me` | Profile and storage usage | UI 8.9 |
@@ -129,6 +139,35 @@ Returned by list, details, approve, PATCH and search (search adds `relevance`).
 ```
 
 **401** "Invalid email or password." for both unknown email and wrong password · **429** after 5 failures
+
+### Two-step verification (v0.2)
+
+When `TWO_FACTOR_ENABLED=true` (the default), `POST /auth/register` and `POST /auth/login` do **not** return a token.
+They email a 6-digit code and answer **202**:
+
+```json
+{
+  "verification_required": true,
+  "purpose": "login",
+  "email": "alex@example.com",
+  "sent_to": "al**@example.com",
+  "expires_in": 600,
+  "message": "We sent a 6-digit code to al**@example.com.",
+  "demo_code": "482913"
+}
+```
+
+`demo_code` is only present in **demo mode** (no `SMTP_HOST` configured), so the app can be shown without an email account.
+
+| Endpoint | Body | Success |
+|---|---|---|
+| `POST /auth/register/verify` | `{ "email", "code" }` | **201** same body as login (the new account is signed in) |
+| `POST /auth/login/verify` | `{ "email", "code" }` | **200** `{ access_token, expires_in, user }` |
+| `POST /auth/resend-code` | `{ "email", "purpose": "register" \| "login" }` | **202** as above, with a new code |
+
+Errors: **400** `WRONG_CODE`, `CODE_EXPIRED` (after 10 minutes), `CODE_NOT_FOUND` · **429** `TOO_MANY_ATTEMPTS`
+(5 wrong codes; the code is then cancelled and wrong codes also count towards the login lockout).
+Codes are stored only as SHA-256 hashes and work once.
 
 ### `GET /auth/me` → **200** user object · `POST /auth/logout` → **204**
 
@@ -229,7 +268,32 @@ Any of `title`, `filename`, `category`, `subject`, `document_type`, `keywords`, 
 - With S3 storage the URL is an S3 pre-signed URL; with local storage it is a signed `/api/files/<token>/<filename>` link.
 - `inline=true` is for previews (iframe / image); `false` downloads as an attachment and writes a `DOWNLOAD` audit entry.
 
-### `DELETE /documents/{id}` → **204**
+### `DELETE /documents/{id}` → **204** (permanent)
+
+### Recycle bin (v0.2)
+
+- `POST /documents/{id}/trash` → **200** document with `status: "DELETED"`, `deleted_at` and `deleted_from_path`.
+  Documents in the bin are hidden from lists, search, folders and categories.
+- `POST /documents/{id}/restore` → **200** document, back in `deleted_from_path` (missing folders are re-created) · **409** `NOT_IN_RECYCLE_BIN`
+- `GET /trash` → `{ "items": [document…], "total": 1 }`
+- `DELETE /trash` → `{ "deleted": 3 }` — permanently deletes everything in the bin
+- `approve`, `reprocess` and `PATCH` answer **409** `IN_RECYCLE_BIN` for a deleted document.
+
+### AI folder recommendation (v0.2)
+
+`GET /documents/{id}/analysis` also returns `folder_recommendations` while the document awaits review:
+
+```json
+"folder_recommendations": [
+  { "folder_id": 4, "path": ["University", "Year 2", "Semester 1", "Database Systems"], "score": 0.75,
+    "reason": "1 similar document is already here, e.g. \"Semester1_Database_Systems_Assignment.pdf\"", "is_new": false },
+  { "folder_id": null, "path": ["University", "Database Systems"], "score": 0.45,
+    "reason": "New folder suggested by the AI from the document's content", "is_new": true }
+]
+```
+
+Score = 0.40 × similar documents in the folder + 0.35 × folder-name match + 0.25 × match with the AI's own path.
+A new folder (fixed score 0.45) is only first when no existing folder fits as well.
 
 ## 6.6 Search
 
@@ -251,6 +315,10 @@ Any of `title`, `filename`, `category`, `subject`, `document_type`, `keywords`, 
 
 `results` is empty when nothing matches. Only the signed-in user's `STORED` documents are searched.
 
+**v0.2:** the answer also has `folders` — folders whose name matches the query, or that hold one of the 3 best results:
+`[ { "folder_id": 8, "name": "Invoices", "path": "Finance/Invoices", "document_count": 1, "relevance": 1.0 } ]`
+(`document_count` includes subfolders).
+
 ## 6.7 Folders and categories
 
 ### `GET /folders`
@@ -267,6 +335,35 @@ Any of `title`, `filename`, `category`, `subject`, `document_type`, `keywords`, 
 ### `POST /folders`
 
 `{ "name": "Semester 1", "parent_folder_id": 2 }` → **201** folder object · **409** `FOLDER_EXISTS`
+
+### `PATCH /folders/{id}` (v0.2)
+
+`{ "name": "Second Year" }` → **200** `{ folder_id, name, parent_folder_id, path }` · **409** `FOLDER_EXISTS` · **404** not your folder
+
+### `DELETE /folders/{id}` (v0.2)
+
+Deletes the folder and all its subfolders. Their documents are moved to the Recycle bin (not lost).
+→ **200** `{ "deleted_folders": 4, "documents_moved_to_recycle_bin": 1 }`
+
+### `GET /folders/{id}/summary` (v0.2)
+
+AI overview of the folder **and its subfolders** (stored documents only):
+
+```json
+{
+  "folder_id": 1, "name": "University", "path": "University",
+  "overview": "\"University\" contains 3 documents (2 PDF and 1 TXT), 6.1 KB in total. All of them are University documents, mainly Assignment and Lecture Notes. Main topics: SQL, Normalisation… Added on 17 Nov 2026.",
+  "source": "local",
+  "document_count": 3, "subfolder_count": 5, "total_size_bytes": 6250,
+  "file_types": { "PDF": 2, "TXT": 1 },
+  "categories": [ { "category": "University", "count": 3 } ],
+  "document_types": [ { "document_type": "Assignment", "count": 2 } ],
+  "top_keywords": ["SQL", "Normalisation"],
+  "documents": [ { "file_id": 1, "name": "…", "title": "…", "summary": "…", "file_type": "PDF" } ]
+}
+```
+
+`source` is `openai` when `AI_PROVIDER=openai` wrote the overview, otherwise `local` (built from the saved titles, keywords and summaries).
 
 ### `GET /categories` → `[ { "category": "University", "count": 3 }, … ]`
 

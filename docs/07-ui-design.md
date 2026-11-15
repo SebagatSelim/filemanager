@@ -15,10 +15,22 @@ Screenshots from the running app (real backend and MySQL, demo account):
 Additions beyond the prototype:
 
 - **Review Queue** page (`/review`) listing documents awaiting review, failed and still processing, with a count badge in the sidebar.
-- **Documents**, **All Folders** and **Categories** pages for browsing.
+- **Documents** and **Categories** pages for browsing.
 - Duplicate and invalid-file handling directly in the upload queue ("Upload anyway" / "Cancel").
 - Confidence ring and similar-document warning on the review page; "Retry processing" for failed files.
 - The prototype's "Pro Plan / Upgrade Storage" elements were left out (not in scope); the sidebar shows storage used against the quota instead.
+
+## Changes after the demonstration (v0.2)
+
+The product review asked for an interface **similar to OneDrive** and a dashboard that shows the user's files and folders.
+
+- **Sidebar like OneDrive:** a **+ Create or upload** button (Upload files / New folder), then **Home**, **My files**, **AI Search**, **Review Queue**, **Recycle bin**, and *Browse files by* **All documents** / **Categories**.
+- **Home** (was Dashboard): an *Ask AI* search box in the banner, **Your folders** tiles (each with an *AI summary* button and a ⋯ menu) and a **Recent files** table — Name, Modified, Location, Size — with *Filter by name*, like OneDrive's Home. The statistics and charts stay below.
+- **My files** (`/files`, replaces *All Folders*): an explorer with a breadcrumb (*My files / University / Year 2*), folders and files in one list, **list or tiles** view, filter by name, sort, and a toolbar with **New folder, Upload, Summarise with AI, Rename, Delete**. Every row has a ⋯ menu.
+- **Recycle bin** (`/recycle-bin`): deleted files with their original location; **Restore** or delete for good; **Empty recycle bin**.
+- **Folder summary dialog:** the AI's overview of a folder (and its subfolders), file types, categories, main topics and a short summary of each document.
+- **AI suggested folder** card on the review page: up to three folders with *Best match*, *Existing folder* / *New folder* labels, a match percentage and the reason.
+- **Two-step verification** screens after sign-in and sign-up: 6-digit code box, *Resend code* with a 30-second timer, and a demo-mode banner when no email server is configured.
 
 ## 7.1 Design principles
 

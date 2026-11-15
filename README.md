@@ -8,7 +8,7 @@
 
 | | |
 |---|---|
-| **Status** | ✅ Proposal and presentation (NIT3003) · ✅ Working application v0.1 — all core features implemented and tested |
+| **Status** | ✅ Proposal and presentation (NIT3003) · ✅ Working application v0.2 — reviewer feedback implemented (see [What's new in v0.2](#whats-new-in-v02-reviewer-feedback)) |
 | **Stack** | React.js · Bootstrap · Python Flask · MySQL · AWS S3 · Tesseract OCR · PyMuPDF · python-docx · OpenAI GPT / Hugging Face |
 | **Docs** | [`docs/`](docs/README.md) |
 
@@ -33,10 +33,24 @@ Upload a file and the system does the organising:
 Upload ─► Validate ─► Extract / OCR ─► AI analysis ─► Metadata ─► Duplicate check ─► Review ─► Store ─► Search
 ```
 
+## What's new in v0.2 (reviewer feedback)
+
+| Feedback from the demonstration | What we built |
+|---|---|
+| Improve account registration / login security | **Two-step verification**: a 6-digit code is emailed at sign-up (the account is only created once the email is confirmed) and at every sign-in. Without an email server it runs in demo mode and shows the code on screen. |
+| Interface similar to OneDrive | **OneDrive-style layout**: "+ Create or upload" button, **Home**, **My files** explorer (breadcrumb, list / tiles view, filter by name, ⋯ menu) and a **Recycle bin** with restore. |
+| Dashboard showing files and folders, search, rename, delete, summarise | **Home** now lists **Your folders** and **Recent files** (like OneDrive), with an AI search box. Files and folders can be **renamed**, **deleted** (to the Recycle bin) and any folder can be **summarised by AI**. |
+| Improve AI recommendation | When a file is uploaded the AI **suggests one of your existing folders** (by similar documents, folder names and its own analysis) and explains why; a new folder is only suggested when nothing fits. |
+| AI search should take you to the folder | **AI Search also finds folders** and opens them in My files. |
+
 ## Screenshots
 
-| Dashboard | AI review (similar file warning) |
+| Home (v0.2) — folders, recent files, AI search | AI suggests an existing folder (v0.2) |
 |---|---|
+| ![Home](docs/images/manual/04-home.jpg) | ![AI suggested folder](docs/images/manual/14-review-ai-folder.jpg) |
+| **My files explorer (v0.2)** | **AI folder summary (v0.2)** |
+| ![My files](docs/images/manual/11-myfiles-menu.jpg) | ![Folder summary](docs/images/manual/08-folder-summary.jpg) |
+| **Dashboard (v0.1)** | **AI review — similar file warning (v0.1)** |
 | ![Dashboard](docs/images/app-dashboard.jpg) | ![AI review](docs/images/app-review.jpg) |
 | **Natural-language search** | **Upload queue (duplicate + invalid file)** |
 | ![Search](docs/images/app-search.jpg) | ![Upload](docs/images/app-upload.jpg) |
@@ -45,11 +59,12 @@ Upload ─► Validate ─► Extract / OCR ─► AI analysis ─► Metadata �
 
 | Feature | Requirement |
 |---|---|
-| Secure registration and login (BCrypt + JWT) | FR-01 |
+| Secure registration and login (BCrypt + JWT) with two-step email verification | FR-01 |
 | Drag-and-drop multi-format upload | FR-02 |
 | AI document classification | FR-03 |
 | Automatic title, keywords and summary | FR-04 |
-| Filename and folder recommendations | FR-05 |
+| Filename and folder recommendations (prefers your existing folders) | FR-05 |
+| OneDrive-style My files, Recycle bin, folder rename / delete / AI summary | FR-05, FR-12 |
 | Natural-language (semantic) search | FR-06 |
 | Exact and similar duplicate detection | FR-07 |
 | Secure, per-user storage on AWS S3 | FR-11 |
@@ -95,7 +110,7 @@ Details: [System Architecture](docs/04-system-architecture.md) · [Database Desi
 │   └── src/                   ← pages, components, API client
 ├── backend/                   ← Flask REST API
 │   ├── app/                   ← API, AI pipeline, models, services
-│   ├── tests/                 ← pytest suite (80 tests)
+│   ├── tests/                 ← pytest suite (99 tests)
 │   ├── requirements.txt
 │   └── .env.example
 ├── database/
@@ -108,6 +123,7 @@ Details: [System Architecture](docs/04-system-architecture.md) · [Database Desi
 
 | | |
 |---|---|
+| **[User Manual (PDF)](docs/user-manual/FileAI-User-Manual.pdf)** | How to use FileAI, step by step with screenshots (v0.2) |
 | [Project Overview](docs/01-project-overview.md) | Problem, market, competitors, aim, objectives, scope |
 | [Requirements](docs/02-requirements-specification.md) | Functional and non-functional requirements, traceability |
 | [Use Cases](docs/03-use-cases.md) | UC-01 to UC-10 |
@@ -172,8 +188,8 @@ Details: [Backend README](backend/README.md) · [Frontend README](frontend/READM
 ## Running the tests
 
 ```bash
-cd backend && pytest --cov=app        # 80 tests, ~86% coverage, no MySQL needed
-cd frontend && npm run test:run       # 85 component and helper tests (Vitest)
+cd backend && pytest --cov=app        # 99 tests, no MySQL needed
+cd frontend && npm run test:run       # 93 component and helper tests (Vitest)
 ```
 
 ## Project timeline
