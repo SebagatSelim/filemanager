@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FileAI — User Manual</title>
+<!-- Source of FileAI-User-Manual.pdf. To rebuild the PDF: open this file in Chrome/Edge > Print > Save as PDF
+     (A4, margins default, "Background graphics" on). -->
+<style>
+  @page { size: A4; margin: 18mm 16mm 18mm 16mm; }
+  :root { --teal: #0f766e; --teal-light: #ecfdf8; --cyan: #0891b2; --navy: #0b2233; --muted: #64748b; --border: #dbe4ea; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Inter, Arial, sans-serif; color: #0f172a; font-size: 10.5pt; line-height: 1.5; margin: 0; }
+  h1, h2, h3 { color: var(--navy); line-height: 1.25; }
+  h2 { font-size: 17pt; margin: 0 0 8pt; padding-bottom: 5pt; border-bottom: 2.5pt solid var(--teal); page-break-before: always; break-before: page; }
+  h3 { font-size: 12.5pt; margin: 14pt 0 4pt; color: var(--teal); }
+  p { margin: 0 0 7pt; }
+  ul, ol { margin: 0 0 8pt; padding-left: 18pt; }
+  li { margin-bottom: 2.5pt; }
+  code, .key { font-family: Consolas, "Courier New", monospace; font-size: 9.5pt; background: #f1f5f9; border: 1px solid var(--border); border-radius: 4px; padding: 0 3pt; }
+  .btn { display: inline-block; font-weight: 600; font-size: 9.5pt; color: #fff; background: var(--teal); border-radius: 4px; padding: 0 5pt; }
+  .menu { font-weight: 600; color: var(--teal); }
+  figure { margin: 8pt 0 12pt; page-break-inside: avoid; break-inside: avoid; }
+  figure img { width: 100%; border: 1px solid var(--border); border-radius: 6px; display: block; }
+  figure.half img { width: 62%; margin: 0 auto; }
+  figure.small img { width: 34%; margin: 0 auto; }
+  figcaption { font-size: 8.8pt; color: var(--muted); text-align: center; margin-top: 4pt; }
+  table { width: 100%; border-collapse: collapse; margin: 4pt 0 10pt; font-size: 9.6pt; page-break-inside: auto; }
+  th, td { border: 1px solid var(--border); padding: 4pt 6pt; text-align: left; vertical-align: top; }
+  th { background: var(--teal-light); color: var(--navy); }
+  tr { page-break-inside: avoid; break-inside: avoid; }
+  .note { border-left: 4pt solid var(--cyan); background: #ecfeff; padding: 6pt 9pt; margin: 6pt 0 10pt; border-radius: 0 6px 6px 0; page-break-inside: avoid; }
+  .warn { border-left-color: #f59e0b; background: #fffbeb; }
+  .steps li { margin-bottom: 4pt; }
+
+  /* Cover */
+  .cover { height: 250mm; display: flex; flex-direction: column; justify-content: space-between; }
+  .cover-top { background: linear-gradient(120deg, #0b2233 0%, #0f3b4e 45%, #0e7490 82%, #06b6d4 100%); color: #fff; border-radius: 14px; padding: 30pt 28pt; }
+  .cover-top .logo { display: inline-block; background: #14b8a6; color: #fff; font-weight: 800; border-radius: 10px; padding: 6pt 10pt; font-size: 14pt; margin-bottom: 14pt; }
+  .cover h1 { color: #fff; font-size: 34pt; margin: 0 0 4pt; }
+  .cover .tag { color: #a5f3fc; font-size: 13pt; margin-bottom: 18pt; }
+  .cover .sub { font-size: 12pt; opacity: 0.92; }
+  .cover img { width: 100%; border-radius: 10px; border: 1px solid var(--border); margin-top: 16pt; }
+  .cover-meta { font-size: 10pt; color: var(--muted); }
+  .cover-meta table td { border: none; padding: 2pt 0; }
+  .cover-meta table td:first-child { width: 34%; color: var(--navy); font-weight: 600; }
+
+  /* Contents */
+  .toc { columns: 2; column-gap: 24pt; font-size: 10.5pt; }
+  .toc ol { margin: 0; padding-left: 16pt; }
+  .toc li { margin-bottom: 4pt; break-inside: avoid; }
+  .toc a { color: #0f172a; text-decoration: none; }
+  a { color: var(--teal); }
+</style>
+</head>
+<body>
+
+<!-- ============================== COVER ============================== -->
+<section class="cover">
+  <div>
+    <div class="cover-top">
+      <div class="logo">AI</div>
+      <h1>FileAI</h1>
+      <div class="tag">Organize smarter with AI</div>
+      <div class="sub"><strong>User Manual</strong> — AI-Powered Personal Digital File Organizer<br>Version 0.2 · November 2026</div>
+    </div>
+    <img src="../images/manual/04-home.jpg" alt="FileAI Home page">
+  </div>
+  <div class="cover-meta">
+    <table>
+      <tr><td>Unit</td><td>NIT3004 IT Capstone Project 2 — Victoria University, Sydney</td></tr>
+      <tr><td>Team</td><td>Group 4 — Al Shahariar (s8159455), Hassan Zaheer (s8149265), Sebagat Selim (s8131475), Royal Dhakal (s8160992)</td></tr>
+      <tr><td>Application version</td><td>0.2 (includes the changes requested after the product demonstration)</td></tr>
+      <tr><td>Web address (local)</td><td>http://localhost:5173 — see the Student Guide for installing and starting the app</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ============================== CONTENTS ============================== -->
+<h2 id="contents" style="page-break-before: always;">Contents</h2>
+<div class="toc">
+  <ol>
+    <li><a href="#intro">Introduction</a></li>
+    <li><a href="#start">Getting started</a></li>
+    <li><a href="#register">Creating an account</a></li>
+    <li><a href="#signin">Signing in (two-step verification)</a></li>
+    <li><a href="#layout">Finding your way around</a></li>
+    <li><a href="#home">The Home page</a></li>
+    <li><a href="#upload">Uploading documents</a></li>
+    <li><a href="#review">Reviewing the AI suggestions</a></li>
+    <li><a href="#myfiles">My files — working with folders and files</a></li>
+    <li><a href="#summary">AI summary of a folder</a></li>
+    <li><a href="#search">Searching with AI</a></li>
+    <li><a href="#details">Document details</a></li>
+    <li><a href="#bin">Recycle bin</a></li>
+    <li><a href="#queue">Review Queue</a></li>
+    <li><a href="#settings">Profile &amp; Settings</a></li>
+    <li><a href="#help">Troubleshooting and FAQ</a></li>
+    <li><a href="#glossary">Glossary</a></li>
+  </ol>
+</div>
+
+<h3>About this manual</h3>
+<p>This manual explains how to <strong>use</strong> FileAI. It is written for people who will store their own documents in the
+application — students and professionals — and does not assume any technical knowledge. Installing and starting the
+servers is covered in the separate <em>Student Guide</em> (<code>STUDENT_GUIDE.md</code> in the project), and the
+technical design is in the <em>Technical Implementation Document</em> and the <code>docs/</code> folder.</p>
+<p>Screenshots were taken from the running application with the built-in demo account. Names, dates and numbers in
+your own account will be different.</p>
+
+<div class="note"><strong>What is new in version 0.2.</strong> After the product demonstration we added two-step sign-in
+with an emailed code, a OneDrive-style layout (<em>Home</em>, <em>My files</em>, <em>Recycle bin</em>), recent files
+and folders on the Home page, rename / delete / AI summary for folders, AI folder suggestions that prefer your
+existing folders, and AI Search results that include folders.</div>
+
+<!-- ============================== 1 ============================== -->
+<h2 id="intro">1. Introduction</h2>
+<p>Most people keep hundreds of files spread over laptops and cloud drives. Sorting them means creating folders by
+hand, renaming files and remembering exact filenames. Scanned documents cannot be searched at all, and duplicate
+copies pile up.</p>
+<p><strong>FileAI</strong> does the filing for you. When you upload a document it:</p>
+<ol>
+  <li><strong>reads the text</strong> — from PDF, Word (DOCX), text (TXT) and image (PNG, JPG) files, using OCR for scans and photos;</li>
+  <li><strong>understands it with AI</strong> — works out the category, a clear title, keywords and a short summary;</li>
+  <li><strong>suggests where to save it</strong> — a tidy filename and one of <em>your existing folders</em>
+      (for example <code>University / Year 2 / Semester 1 / Database Systems</code>);</li>
+  <li><strong>warns about duplicates</strong> — identical copies and edited versions of files you already have;</li>
+  <li>lets <strong>you approve or change</strong> every suggestion — nothing is saved until you say so;</li>
+  <li>lets you <strong>find files by meaning</strong> — e.g. <em>"Find my Semester 1 Database assignment"</em>.</li>
+</ol>
+<h3>Your privacy</h3>
+<ul>
+  <li>Every account is private: you only ever see your own folders and files.</li>
+  <li>Passwords are stored as one-way BCrypt hashes, and sign-in needs a code sent to your email.</li>
+  <li>You are signed out automatically after 30 minutes, and after 5 wrong passwords sign-in is paused for 5 minutes.</li>
+  <li>By default the AI runs inside the FileAI server, so the text of your documents is not sent to any outside service.</li>
+</ul>
+
+<!-- ============================== 2 ============================== -->
+<h2 id="start">2. Getting started</h2>
+<h3>What you need</h3>
+<table>
+  <tr><th>Item</th><th>Requirement</th></tr>
+  <tr><td>Web browser</td><td>A current version of Google Chrome, Microsoft Edge or Mozilla Firefox</td></tr>
+  <tr><td>Screen</td><td>Laptop or desktop recommended. Phones and tablets work too — the menu opens with the <span class="key">☰</span> button.</td></tr>
+  <tr><td>Email</td><td>An email address you can read, for the sign-in codes</td></tr>
+  <tr><td>Files</td><td>PDF, DOCX, TXT, PNG or JPG, up to 20 MB each. Each account has 1 GB of storage.</td></tr>
+</table>
+<h3>Opening FileAI</h3>
+<ol class="steps">
+  <li>Make sure the FileAI servers are running (your team or administrator starts them — see the Student Guide, Part 5).</li>
+  <li>Open your browser and go to <code>http://localhost:5173</code>.</li>
+  <li>You will see the <strong>Sign in</strong> page. If you don't have an account yet, click <span class="menu">Create account</span>.</li>
+</ol>
+<h3>Demo account</h3>
+<p>For demonstrations the app comes with a ready-made account that already contains nine sample documents:</p>
+<table>
+  <tr><th>Email</th><td><code>demo@fileai.test</code></td></tr>
+  <tr><th>Password</th><td><code>Demo@12345</code></td></tr>
+</table>
+<div class="note"><strong>Demo mode.</strong> If the server has no email account configured, FileAI cannot send the
+sign-in codes by email. It then runs in <em>demo mode</em> and shows the code on the screen instead (see section 4).
+On a real installation the code is only ever sent by email.</div>
+
+<!-- ============================== 3 ============================== -->
+<h2 id="register">3. Creating an account</h2>
+<ol class="steps">
+  <li>On the Sign in page click <span class="menu">Create account</span>.</li>
+  <li>Enter your <strong>first name</strong>, <strong>last name</strong> and <strong>email address</strong>.</li>
+  <li>Choose a <strong>password</strong>. The checklist under the box turns green as each rule is met:
+    at least 8 characters, an uppercase letter, a lowercase letter, a number and a special character such as <code>!</code> or <code>@</code>.</li>
+  <li>Type the password again in <strong>Confirm password</strong> and click <span class="btn">Create account</span>.</li>
+</ol>
+<figure class="half"><img src="../images/manual/01-register.jpg" alt="Registration form"><figcaption>Figure 1 — Create your account, with the live password checklist</figcaption></figure>
+<ol class="steps" start="5">
+  <li>FileAI emails you a <strong>6-digit verification code</strong> to confirm that the email address is really yours.
+      The <strong>Confirm your email</strong> page shows where it was sent (part of the address is hidden).</li>
+  <li>Type the code and click <span class="btn">Verify and create account</span>. Your account is created and you are signed in straight away.</li>
+</ol>
+<figure class="half"><img src="../images/manual/02-register-code.jpg" alt="Confirm your email"><figcaption>Figure 2 — Confirm your email with the 6-digit code (demo mode shows the code in the blue box)</figcaption></figure>
+<div class="note">The account is only created <strong>after</strong> the email is confirmed, so nobody can register with
+an address that is not theirs. If an account with the same email already exists you will be told so — sign in instead.</div>
+
+<!-- ============================== 4 ============================== -->
+<h2 id="signin">4. Signing in (two-step verification)</h2>
+<p>Signing in has two steps, so a stolen password alone is not enough to open your account.</p>
+<ol class="steps">
+  <li><strong>Step 1 — password.</strong> Enter your email address and password and click <span class="btn">Sign in to FileAI</span>.</li>
+  <li><strong>Step 2 — code.</strong> FileAI emails you a 6-digit code. On the <strong>Check your email</strong> page, type the
+      code and click <span class="btn">Verify and sign in</span>. You arrive on the Home page.</li>
+</ol>
+<figure class="half"><img src="../images/manual/03-login-code.jpg" alt="Two-step verification"><figcaption>Figure 3 — Two-step verification after the password</figcaption></figure>
+<table>
+  <tr><th>Situation</th><th>What to do</th></tr>
+  <tr><td>The email has not arrived</td><td>Check your junk/spam folder. After 30 seconds you can click <span class="menu">Resend code</span>.</td></tr>
+  <tr><td><em>"That code is not correct"</em></td><td>Check the digits and try again. After 5 wrong codes the code is cancelled — click <span class="menu">Resend code</span>.</td></tr>
+  <tr><td><em>"This code has expired"</em></td><td>Codes work for 10 minutes and only once. Click <span class="menu">Resend code</span>.</td></tr>
+  <tr><td>Demo mode banner</td><td>No email server is set up. Click <span class="menu">Use it</span> to copy the code shown on screen into the box.</td></tr>
+  <tr><td>Wrong email address</td><td>Click <span class="menu">← Back</span> to return to the first step.</td></tr>
+</table>
+<div class="note warn">For your security, FileAI pauses sign-in for 5 minutes after 5 failed attempts (wrong passwords
+or wrong codes), and signs you out automatically after 30 minutes. Use <span class="menu">Sign out</span> at the
+bottom of the menu when you are using a shared computer.</div>
+
+<!-- ============================== 5 ============================== -->
+<h2 id="layout">5. Finding your way around</h2>
+<p>FileAI is laid out like Microsoft OneDrive. The <strong>menu on the left</strong> is always visible (on a phone, tap
+<span class="key">☰</span> to open it). The <strong>top bar</strong> shows the page name, a quick search box (press
+<span class="key">/</span> to jump to it), an <span class="btn">Upload</span> button and your account menu.</p>
+<figure class="small"><img src="../images/manual/05-create-menu.jpg" alt="Sidebar menu"><figcaption>Figure 4 — The menu, with the Create or upload button open</figcaption></figure>
+<table>
+  <tr><th>Menu item</th><th>What it is for</th></tr>
+  <tr><td><span class="menu">+ Create or upload</span></td><td><strong>Upload files</strong> or create a <strong>New folder</strong></td></tr>
+  <tr><td><span class="menu">Home</span></td><td>Your overview: AI search, totals, your folders and your recent files (section 6)</td></tr>
+  <tr><td><span class="menu">My files</span></td><td>Browse, create, rename, delete and summarise folders and files (section 9)</td></tr>
+  <tr><td><span class="menu">AI Search</span></td><td>Find files and folders by describing them (section 11)</td></tr>
+  <tr><td><span class="menu">Review Queue</span></td><td>Uploads waiting for your approval; the red number shows how many (section 14)</td></tr>
+  <tr><td><span class="menu">Recycle bin</span></td><td>Deleted files, which you can restore (section 13)</td></tr>
+  <tr><td><span class="menu">All documents</span></td><td>Every file in one list with filters for category, type, folder and status</td></tr>
+  <tr><td><span class="menu">Categories</span></td><td>Your files grouped by the AI's categories (University, Finance, Career, …)</td></tr>
+  <tr><td><span class="menu">Profile &amp; Settings</span></td><td>Your name, email, password and storage (section 15)</td></tr>
+</table>
+<p>The <strong>Storage</strong> box at the bottom of the menu shows how much of your 1 GB you are using.</p>
+
+<!-- ============================== 6 ============================== -->
+<h2 id="home">6. The Home page</h2>
+<p>Home is the first page after you sign in. From top to bottom it shows:</p>
+<ul>
+  <li><strong>The banner</strong> — a greeting, how many documents the AI processed this month and whether any need your review,
+      plus an <strong>Ask AI</strong> box: type a question such as <em>"my semester 1 database assignment"</em> and press
+      <span class="btn">Search</span>.</li>
+  <li><strong>Totals</strong> — total documents, how many the AI classified, duplicates found and storage used.</li>
+  <li><strong>Your folders</strong> and <strong>Recent files</strong> (below).</li>
+  <li><strong>Charts</strong> — uploads per month, documents by category, and the latest AI activity.</li>
+</ul>
+<figure><img src="../images/manual/04-home.jpg" alt="Home page"><figcaption>Figure 5 — Home: banner with AI search, totals and the start of Your folders</figcaption></figure>
+<h3>Your folders</h3>
+<p>One tile for each of your top-level folders, with the number of documents inside (including subfolders).</p>
+<ul>
+  <li>Click a tile to open the folder in <strong>My files</strong>.</li>
+  <li>Click <span class="menu">AI summary</span> to read what the folder contains (section 10).</li>
+  <li>Click <span class="key">⋯</span> for <strong>Open</strong>, <strong>Summarise with AI</strong>, <strong>Rename</strong> and <strong>Delete</strong>.</li>
+</ul>
+<figure><img src="../images/manual/06-home-folders.jpg" alt="Your folders"><figcaption>Figure 6 — Your folders on the Home page</figcaption></figure>
+<h3>Recent files</h3>
+<p>Like OneDrive, Home lists the files you uploaded or changed most recently: <strong>Name</strong>, <strong>Modified</strong>,
+<strong>Location</strong> (click it to open the folder) and <strong>Size</strong>.</p>
+<ul>
+  <li>Type in <strong>Filter by name</strong> to narrow the list.</li>
+  <li>Click a file to open it, or <span class="key">⋯</span> to <strong>Open</strong>, <strong>Download</strong>, <strong>Rename</strong> or <strong>Delete</strong> it.</li>
+  <li><span class="menu">View all</span> opens the full documents list.</li>
+</ul>
+<figure><img src="../images/manual/07-home-recent.jpg" alt="Recent files"><figcaption>Figure 7 — Recent files with filter and actions</figcaption></figure>
+
+<!-- ============================== 7 ============================== -->
+<h2 id="upload">7. Uploading documents</h2>
+<ol class="steps">
+  <li>Click <span class="menu">+ Create or upload</span> → <strong>Upload files</strong> (or the <span class="btn">Upload</span> button in the top bar).</li>
+  <li><strong>Drag and drop</strong> one or more files onto the box, or click <span class="btn">Browse files</span> and choose them.</li>
+  <li>Each file appears in the <strong>Upload queue</strong> with a progress bar, then <em>Analysing…</em> while the AI reads it
+      (usually less than a second; long scanned documents take a little longer).</li>
+  <li>When it says <strong>Analysis ready</strong>, the row also tells you which folder the AI suggests —
+      <em>existing folder</em> or <em>new folder</em>. Click <span class="btn">Review</span> to check and save it (section 8).</li>
+</ol>
+<figure><img src="../images/manual/13-upload.jpg" alt="Upload page"><figcaption>Figure 8 — Upload: the AI already suggests the existing Database Systems folder</figcaption></figure>
+<table>
+  <tr><th>Message</th><th>Meaning</th></tr>
+  <tr><td><em>Unsupported file format</em></td><td>Only PDF, DOCX, TXT, PNG and JPG can be uploaded.</td></tr>
+  <tr><td><em>The file is too large</em></td><td>Each file can be at most 20 MB.</td></tr>
+  <tr><td><em>You already have this file</em></td><td>An identical copy is already stored. Choose <span class="menu">Upload anyway</span> or <span class="menu">Cancel</span>.</td></tr>
+  <tr><td><em>Your storage is full</em></td><td>Delete files you no longer need and empty the Recycle bin.</td></tr>
+  <tr><td><em>OCR is not installed</em></td><td>Text in images and scans can't be read on this server. You can still type the details yourself on the review page.</td></tr>
+</table>
+<div class="note">You can leave the upload page at any time. Files that are ready wait for you in the <strong>Review Queue</strong>.</div>
+
+<!-- ============================== 8 ============================== -->
+<h2 id="review">8. Reviewing the AI suggestions</h2>
+<p>The review page shows everything the AI worked out. <strong>Nothing is saved until you click Approve &amp; Save</strong>,
+so you always stay in control.</p>
+<figure><img src="../images/manual/14-review-ai-folder.jpg" alt="Review page"><figcaption>Figure 9 — Review page with the AI suggested folder</figcaption></figure>
+<h3>AI suggested folder</h3>
+<p>The AI looks at the folders you <strong>already have</strong> and recommends the best one, with the reason:</p>
+<ul>
+  <li><em>"1 similar document is already here"</em> — documents like this one are already stored in that folder;</li>
+  <li><em>"Folder name matches the document"</em> — the folder's name appears in the document's title, subject or keywords;</li>
+  <li><em>"Matches the folder the AI chose"</em> — it is the folder the AI picked from the document's content.</li>
+</ul>
+<p>The best match is labelled <strong>Best match</strong> and is already selected. A <strong>New folder</strong> is only
+recommended first when none of your folders fits. Click any option to choose it, or type your own folder in the
+<strong>Folder</strong> field — missing folders are created for you.</p>
+<h3>The other fields</h3>
+<table>
+  <tr><th>Field</th><th>What it is</th></tr>
+  <tr><td>Title</td><td>A clear, readable name for the document</td></tr>
+  <tr><td>Filename</td><td>The name the file is saved under, e.g. <code>Semester1_Database_Systems_Assignment.pdf</code></td></tr>
+  <tr><td>Category</td><td>University, Finance, Career, Health, Legal, Travel, Work, Personal or Other</td></tr>
+  <tr><td>Subject / Document type</td><td>e.g. <em>Database Systems</em> / <em>Assignment</em> (optional)</td></tr>
+  <tr><td>Keywords</td><td>Words used by search. Press Enter to add one, click × to remove one.</td></tr>
+  <tr><td>Summary</td><td>One or two sentences about the document</td></tr>
+</table>
+<ul>
+  <li><strong>AI confidence</strong> — when it is low (below 60%) a yellow box asks you to check the category, folder and title carefully.</li>
+  <li><strong>Similar documents found</strong> — the file looks like one you already have (e.g. <em>97% similar</em>). You can still save it or discard it.</li>
+  <li><span class="btn">Approve &amp; Save</span> files the document and makes it searchable.
+      <span class="menu">Reset to AI suggestions</span> undoes your edits.
+      <span class="menu">Discard upload</span> deletes the upload completely.</li>
+</ul>
+
+<!-- ============================== 9 ============================== -->
+<h2 id="myfiles">9. My files — working with folders and files</h2>
+<p><span class="menu">My files</span> is the file explorer. Folders are listed first, then the files in the open folder.</p>
+<figure><img src="../images/manual/09-myfiles.jpg" alt="My files"><figcaption>Figure 10 — My files, list view</figcaption></figure>
+<h3>Moving around</h3>
+<ul>
+  <li><strong>Open a folder</strong> by clicking its name. The <strong>breadcrumb</strong> at the top
+      (<em>My files / University / Year 2 / …</em>) shows where you are — click any part of it to go back up.
+      The browser's Back button works too.</li>
+  <li>Switch between <strong>list</strong> and <strong>tiles</strong> view with the two buttons on the right of the toolbar.</li>
+  <li><strong>Filter by name</strong> shows only matching folders and files; <strong>Name / Modified</strong> changes the order.</li>
+</ul>
+<figure><img src="../images/manual/10-myfiles-tiles.jpg" alt="Tiles view"><figcaption>Figure 11 — Tiles view</figcaption></figure>
+<h3>The toolbar</h3>
+<table>
+  <tr><th>Button</th><th>What it does</th></tr>
+  <tr><td><span class="btn">New folder</span></td><td>Creates a folder inside the folder you are in (or at the top level)</td></tr>
+  <tr><td>Upload</td><td>Opens the upload page</td></tr>
+  <tr><td>Summarise with AI</td><td>AI overview of the open folder and its subfolders (section 10)</td></tr>
+  <tr><td>Rename</td><td>Renames the open folder</td></tr>
+  <tr><td>Delete</td><td>Deletes the open folder and its subfolders — the documents inside go to the Recycle bin</td></tr>
+</table>
+<h3>The ⋯ menu on each row</h3>
+<p>Every folder and file has a <span class="key">⋯</span> button:</p>
+<ul>
+  <li>Folders: <strong>Open</strong>, <strong>Summarise with AI</strong>, <strong>Rename</strong>, <strong>Delete</strong>.</li>
+  <li>Files: <strong>Open</strong>, <strong>Download</strong>, <strong>Rename</strong>, <strong>Delete</strong>.</li>
+</ul>
+<figure><img src="../images/manual/11-myfiles-menu.jpg" alt="File menu"><figcaption>Figure 12 — Inside a folder, with the ⋯ menu of a file</figcaption></figure>
+<h3>Renaming</h3>
+<p>Choose <strong>Rename</strong>, type the new name and click <span class="btn">Rename</span>. File and folder names
+cannot contain <code>\ / : * ? " &lt; &gt; |</code>, and two folders in the same place cannot have the same name.
+Renaming a file keeps its type (for example <code>.pdf</code>).</p>
+<figure class="half"><img src="../images/manual/12-rename-folder.jpg" alt="Rename folder"><figcaption>Figure 13 — Renaming a folder</figcaption></figure>
+<h3>Deleting</h3>
+<p>Deleting is safe: deleted <strong>files go to the Recycle bin</strong> and can be restored. When you delete a
+<strong>folder</strong>, the folder and its subfolders are removed and all the documents inside them go to the Recycle bin.
+FileAI always asks you to confirm first.</p>
+
+<!-- ============================== 10 ============================== -->
+<h2 id="summary">10. AI summary of a folder</h2>
+<p>Not sure what is in a folder? Ask the AI. Click <span class="menu">AI summary</span> on a folder tile on Home,
+<strong>Summarise with AI</strong> in the ⋯ menu, or the <strong>Summarise with AI</strong> button inside a folder.</p>
+<figure><img src="../images/manual/08-folder-summary.jpg" alt="Folder summary"><figcaption>Figure 14 — AI summary of the University folder</figcaption></figure>
+<p>The summary covers the folder <strong>and all its subfolders</strong>:</p>
+<ul>
+  <li>a short overview written by the AI — how many documents, which types, which categories, the main topics and when they were added;</li>
+  <li>chips with the number of documents and subfolders, total size and file types;</li>
+  <li>the main topics (the most common keywords);</li>
+  <li><strong>What's inside</strong> — each document's title and summary. Click a title to open the document.</li>
+</ul>
+
+<!-- ============================== 11 ============================== -->
+<h2 id="search">11. Searching with AI</h2>
+<p>Describe what you are looking for in plain English — you don't need the exact filename. Use the
+<strong>Ask AI</strong> box on Home, the quick search in the top bar, or <span class="menu">AI Search</span> in the menu.</p>
+<figure><img src="../images/manual/17-search-folders.jpg" alt="AI Search"><figcaption>Figure 15 — AI Search finds the folder and the matching documents</figcaption></figure>
+<ul>
+  <li><strong>Folders</strong> are shown first: folders whose name matches your words, and folders that hold the best results.
+      Click <span class="menu">Open →</span> to go straight into the folder.</li>
+  <li><strong>Documents</strong> are ranked by how well they match (the % bar). Click a result to open it.</li>
+  <li>When the results contain several categories, use the <strong>Category</strong> chips to narrow them down.</li>
+</ul>
+<h3>Search tips</h3>
+<table>
+  <tr><th>Try</th><th>Finds</th></tr>
+  <tr><td><em>Find my Semester 1 Database assignment</em></td><td>Assignments for that unit and semester</td></tr>
+  <tr><td><em>invoices</em></td><td>The Finance / Invoices folder and your invoices</td></tr>
+  <tr><td><em>flight booking</em></td><td>Travel bookings and the folder they are in</td></tr>
+  <tr><td><em>my latest resume</em></td><td>Resumes in the Career folder</td></tr>
+</table>
+<p>Only documents you have approved are searched. Documents in the Review Queue or the Recycle bin are not shown.</p>
+
+<!-- ============================== 12 ============================== -->
+<h2 id="details">12. Document details</h2>
+<p>Click any file to open its details page.</p>
+<figure><img src="../images/manual/15-document-details.jpg" alt="Document details"><figcaption>Figure 16 — Document details: preview, AI metadata and actions</figcaption></figure>
+<ul>
+  <li><strong>Preview</strong> — PDFs and images are shown directly; Word and text files are shown as text.
+      <span class="menu">Open in new tab</span> shows the original file.</li>
+  <li><strong>Details</strong> — title, category, folder, keywords, summary, size, upload date, how the text was read, AI confidence and duplicate status.</li>
+  <li><strong>Edit</strong> — change the title, category, subject, type, keywords or summary.</li>
+  <li><strong>Rename</strong>, <strong>Move</strong> (choose another folder), <strong>Download</strong>.</li>
+  <li><strong>Move to Recycle bin</strong> — deletes the document safely (section 13).</li>
+  <li><strong>Similar documents</strong> — other files that look like this one.</li>
+</ul>
+
+<!-- ============================== 13 ============================== -->
+<h2 id="bin">13. Recycle bin</h2>
+<p>Deleted files are kept in the <span class="menu">Recycle bin</span> until you restore them or delete them for good —
+just like OneDrive.</p>
+<figure><img src="../images/manual/16-recycle-bin.jpg" alt="Recycle bin"><figcaption>Figure 17 — Recycle bin with the original location of each file</figcaption></figure>
+<table>
+  <tr><th>Action</th><th>Result</th></tr>
+  <tr><td><span class="btn">Restore</span></td><td>The file goes back to the folder it was deleted from (<em>Original location</em>). If that folder was deleted too, it is created again.</td></tr>
+  <tr><td><span class="key">⊗</span> (Delete permanently)</td><td>Deletes that one file for good.</td></tr>
+  <tr><td>Empty recycle bin</td><td>Deletes <strong>everything</strong> in the bin for good.</td></tr>
+</table>
+<div class="note warn">Permanent deletion cannot be undone. Files in the Recycle bin still count towards your storage
+until the bin is emptied. They are hidden from search, folders and categories.</div>
+
+<!-- ============================== 14 ============================== -->
+<h2 id="queue">14. Review Queue</h2>
+<p>The <span class="menu">Review Queue</span> lists uploads that are not saved yet: <strong>awaiting review</strong>,
+still <strong>processing</strong>, or <strong>failed</strong>. The red number in the menu shows how many need you.</p>
+<figure><img src="../images/manual/18-review-queue.jpg" alt="Review queue"><figcaption>Figure 18 — Review Queue</figcaption></figure>
+<ul>
+  <li>Click <span class="btn">Review</span> to open the review page (section 8).</li>
+  <li>If processing <strong>failed</strong> (for example an unreadable scan), open it and click <span class="menu">Retry processing</span>,
+      or type the details yourself and approve it.</li>
+</ul>
+
+<!-- ============================== 15 ============================== -->
+<h2 id="settings">15. Profile &amp; Settings</h2>
+<p>Open <span class="menu">Profile &amp; Settings</span> from the menu or from your name in the top-right corner.</p>
+<ul>
+  <li><strong>Profile</strong> — change your name and email address.</li>
+  <li><strong>Password</strong> — enter your current password, then the new one twice (same rules as when you registered).</li>
+  <li><strong>Storage</strong> — how much of your 1 GB is used and how many documents you have.</li>
+  <li><strong>AI &amp; Privacy</strong> — which AI is analysing your documents and whether OCR is available.</li>
+</ul>
+
+<!-- ============================== 16 ============================== -->
+<h2 id="help">16. Troubleshooting and FAQ</h2>
+<table>
+  <tr><th>Problem or question</th><th>Answer</th></tr>
+  <tr><td><em>"Can't reach the FileAI server"</em></td><td>The backend is not running. Ask your administrator, or start it as described in the Student Guide.</td></tr>
+  <tr><td>I didn't get the sign-in code</td><td>Wait a minute and check junk/spam, then click <strong>Resend code</strong>. In demo mode the code is shown on screen.</td></tr>
+  <tr><td><em>"Too many failed sign-in attempts"</em></td><td>Wait 5 minutes and try again.</td></tr>
+  <tr><td><em>"Your session has expired"</em></td><td>You were signed out after 30 minutes. Sign in again.</td></tr>
+  <tr><td>The AI chose the wrong folder or category</td><td>Pick another option in <strong>AI suggested folder</strong>, or type your own before clicking Approve &amp; Save. You can also <strong>Move</strong> or <strong>Edit</strong> it later.</td></tr>
+  <tr><td>A scanned document has no text</td><td>OCR may not be installed on the server, or the scan is unclear. Enter the details yourself.</td></tr>
+  <tr><td>I deleted something by mistake</td><td>Open the <strong>Recycle bin</strong> and click <strong>Restore</strong>.</td></tr>
+  <tr><td>I deleted a folder by mistake</td><td>Restore its documents from the Recycle bin — their folders are created again.</td></tr>
+  <tr><td>Search doesn't find my file</td><td>Only approved documents are searched. Check the Review Queue, then try other words (subject, type, company, semester).</td></tr>
+  <tr><td>Can other users see my files?</td><td>No. Each account can only see its own folders and files.</td></tr>
+  <tr><td>Storage is full</td><td>Delete files you don't need and <strong>empty the Recycle bin</strong>.</td></tr>
+</table>
+
+<!-- ============================== 17 ============================== -->
+<h2 id="glossary">17. Glossary</h2>
+<table>
+  <tr><th>Term</th><th>Meaning</th></tr>
+  <tr><td>AI suggestion</td><td>A title, category, keywords, summary, filename or folder proposed by FileAI's AI. You can always change it.</td></tr>
+  <tr><td>AI confidence</td><td>How sure the AI is about the category (0–100%). Below 60% you are asked to double-check.</td></tr>
+  <tr><td>Breadcrumb</td><td>The path at the top of My files, e.g. <em>My files / University / Year 2</em>.</td></tr>
+  <tr><td>Duplicate</td><td>An identical copy (exact) or an edited version (similar) of a file you already have.</td></tr>
+  <tr><td>OCR</td><td>Optical Character Recognition — reading text from images and scanned documents.</td></tr>
+  <tr><td>Recycle bin</td><td>Where deleted files wait until they are restored or permanently deleted.</td></tr>
+  <tr><td>Review Queue</td><td>Uploads that have been analysed but not yet approved.</td></tr>
+  <tr><td>Two-step verification</td><td>Signing in with your password <em>and</em> a one-time code sent to your email.</td></tr>
+</table>
+
+</body>
+</html>
