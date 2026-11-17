@@ -4,6 +4,8 @@ Project documentation for the **AI-Powered Personal Digital File Organizer** (Gr
 
 To install and run the app, see the **[Student Guide](../STUDENT_GUIDE.md)**.
 
+To **use** the app, see the **[User Manual (PDF)](user-manual/FileAI-User-Manual.pdf)** — 17 illustrated sections from creating an account to the Recycle bin ([HTML source](user-manual/FileAI-User-Manual.html)).
+
 | # | Document | What's in it |
 |---|---|---|
 | 1 | [Project Overview](01-project-overview.md) | Problem, market, competitors, gap, aim, SMART objectives, scope |

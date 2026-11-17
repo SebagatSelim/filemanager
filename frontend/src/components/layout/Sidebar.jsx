@@ -1,7 +1,9 @@
+import { useCallback, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import BrandLogo from '../BrandLogo';
 import StorageWidget from '../StorageWidget';
 import { useWorkspace } from '../../context/WorkspaceContext';
+import useClickOutside from '../../hooks/useClickOutside';
 import useSignOut from '../../hooks/useSignOut';
 
 const REVIEW_ROUTE = /^\/documents\/[^/]+\/review\/?$/;
@@ -46,6 +48,44 @@ function NavItem({ to, icon, label, badge, end = false, onNavigate, active }) {
   );
 }
 
+/** OneDrive-style "+ Create or upload" button with a small menu. */
+function CreateMenu({ onNavigate }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const close = useCallback(() => setOpen(false), []);
+  useClickOutside(ref, close, open);
+  const pick = () => {
+    close();
+    onNavigate?.();
+  };
+  return (
+    <div className="dropdown fa-create-menu" ref={ref}>
+      <button
+        type="button"
+        className="btn btn-primary fa-btn-gradient w-100 fa-create-button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+      >
+        <i className="bi bi-plus-lg me-2" aria-hidden="true" />
+        Create or upload
+      </button>
+      {open && (
+        <div className="dropdown-menu show fa-dropdown w-100" role="menu">
+          <Link to="/upload" className="dropdown-item" role="menuitem" onClick={pick}>
+            <i className="bi bi-cloud-arrow-up me-2" aria-hidden="true" />
+            Upload files
+          </Link>
+          <Link to="/files?new=1" className="dropdown-item" role="menuitem" onClick={pick}>
+            <i className="bi bi-folder-plus me-2" aria-hidden="true" />
+            New folder
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Sidebar({ open, onClose }) {
   const { stats, loading } = useWorkspace();
   const signOut = useSignOut();
@@ -66,18 +106,15 @@ export default function Sidebar({ open, onClose }) {
         </button>
       </div>
 
+      <div className="px-3 pt-1 pb-2">
+        <CreateMenu onNavigate={onClose} />
+      </div>
+
       <nav className="fa-sidebar-nav">
         <div className="fa-nav-section">Main menu</div>
-        <NavItem to="/" end icon="bi-grid-1x2" label="Dashboard" onNavigate={onClose} />
-        <NavItem
-          to="/documents"
-          icon="bi-file-earmark-text"
-          label="Documents"
-          onNavigate={onClose}
-          active={onReviewPage ? false : undefined}
-        />
-        <NavItem to="/upload" icon="bi-cloud-arrow-up" label="Upload Files" onNavigate={onClose} />
-        <NavItem to="/search" icon="bi-search" label="AI Search" onNavigate={onClose} />
+        <NavItem to="/" end icon="bi-house-door" label="Home" onNavigate={onClose} />
+        <NavItem to="/files" icon="bi-folder2" label="My files" onNavigate={onClose} />
+        <NavItem to="/search" icon="bi-stars" label="AI Search" onNavigate={onClose} />
         <NavItem
           to="/review"
           icon="bi-cpu"
@@ -87,8 +124,16 @@ export default function Sidebar({ open, onClose }) {
           active={onReviewPage ? true : undefined}
         />
 
-        <div className="fa-nav-section">Organize</div>
-        <NavItem to="/folders" icon="bi-folder2" label="All Folders" onNavigate={onClose} />
+        <NavItem to="/recycle-bin" icon="bi-trash3" label="Recycle bin" onNavigate={onClose} />
+
+        <div className="fa-nav-section">Browse files by</div>
+        <NavItem
+          to="/documents"
+          icon="bi-file-earmark-text"
+          label="All documents"
+          onNavigate={onClose}
+          active={onReviewPage ? false : undefined}
+        />
         <NavItem to="/categories" icon="bi-tags" label="Categories" onNavigate={onClose} />
       </nav>
 

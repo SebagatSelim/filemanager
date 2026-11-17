@@ -84,13 +84,36 @@ export function AuthProvider({ children }) {
     };
   }, [session.token]);
 
-  const login = useCallback(async (email, password) => {
-    const data = await authApi.login({ email: email.trim(), password });
+  // Save the JWT returned by /auth/login, /auth/login/verify or /auth/register/verify.
+  const startSession = useCallback((data) => {
     saveSession({ token: data.access_token, user: data.user, expiresIn: data.expires_in });
     setEndReason(null);
     setSession({ token: data.access_token, user: data.user });
     return data.user;
   }, []);
+
+  /**
+   * Step 1 of signing in. Returns { user } when signed in straight away, or
+   * { verification } when the server emailed a 6-digit code (two-step verification).
+   */
+  const login = useCallback(
+    async (email, password) => {
+      const data = await authApi.login({ email: email.trim(), password });
+      if (data?.verification_required) return { verification: data };
+      return { user: startSession(data) };
+    },
+    [startSession],
+  );
+
+  /** Step 2: check the emailed code. purpose is 'login' or 'register'. Returns the signed-in user. */
+  const verifyCode = useCallback(
+    async ({ purpose, email, code }) => {
+      const check = purpose === 'register' ? authApi.verifyRegistration : authApi.verifyLogin;
+      const data = await check({ email, code: code.trim() });
+      return startSession(data);
+    },
+    [startSession],
+  );
 
   const logout = useCallback(async () => {
     try {
@@ -120,11 +143,12 @@ export function AuthProvider({ children }) {
       isAuthenticated: Boolean(session.token),
       endReason,
       login,
+      verifyCode,
       logout,
       register,
       updateUser,
     }),
-    [session, endReason, login, logout, register, updateUser],
+    [session, endReason, login, verifyCode, logout, register, updateUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

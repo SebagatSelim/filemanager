@@ -1,10 +1,16 @@
-import { Link } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import StatCard from '../components/StatCard';
 import UploadsChart from '../components/charts/UploadsChart';
 import CategoryDoughnut from '../components/charts/CategoryDoughnut';
 import { EmptyState, ErrorState, Skeleton, SkeletonList } from '../components/Feedback';
+import FolderTiles from '../components/files/FolderTiles';
+import RecentFiles from '../components/files/RecentFiles';
+import { getFolders } from '../api/folders';
+import { listDocuments } from '../api/documents';
 import { useAuth } from '../context/AuthContext';
 import { useWorkspace } from '../context/WorkspaceContext';
+import useFileActions from '../hooks/useFileActions';
 import {
   formatBytes,
   formatNumber,
@@ -18,6 +24,32 @@ import { activityMeta, categoryColor, isDeletionAction } from '../utils/labels';
 
 function currentMonthKey(date = new Date()) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/** Search box on the Home page: sends the question to AI Search. */
+function HomeSearch() {
+  const navigate = useNavigate();
+  const [query, setQuery] = useState('');
+  const submit = (event) => {
+    event.preventDefault();
+    const q = query.trim();
+    navigate(q ? `/search?q=${encodeURIComponent(q)}` : '/search');
+  };
+  return (
+    <form className="fa-home-search" role="search" onSubmit={submit}>
+      <i className="bi bi-stars" aria-hidden="true" />
+      <input
+        type="search"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder='Ask AI to find a file or folder, e.g. "my semester 1 database assignment"'
+        aria-label="Search your files and folders with AI"
+      />
+      <button type="submit" className="btn btn-light btn-sm fw-semibold">
+        Search
+      </button>
+    </form>
+  );
 }
 
 function HeroBanner({ firstName, stats }) {
@@ -64,6 +96,9 @@ function HeroBanner({ firstName, stats }) {
             Upload Files
           </Link>
         </div>
+      </div>
+      <div className="fa-hero-search-row">
+        <HomeSearch />
       </div>
       <dl className="fa-hero-stats">
         <div>
@@ -235,6 +270,26 @@ export default function DashboardPage() {
   const firstName = getFirstName(user?.name, user?.email);
   const initialLoading = loading && !stats;
 
+  // Folders and recent files for the OneDrive-style Home sections.
+  const [files, setFiles] = useState({ loading: true, folders: [], recent: [] });
+  const [reloadKey, setReloadKey] = useState(0);
+  const reloadFiles = useCallback(() => setReloadKey((k) => k + 1), []);
+  const actions = useFileActions({ onChanged: reloadFiles });
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([getFolders(), listDocuments({ sort: 'updated_at', order: 'desc', per_page: 50 })])
+      .then(([folders, docs]) => {
+        if (!cancelled) setFiles({ loading: false, folders, recent: docs.items || [] });
+      })
+      .catch(() => {
+        if (!cancelled) setFiles((f) => ({ ...f, loading: false }));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey]);
+
   if (!stats && error && !loading) {
     return (
       <div className="card fa-card">
@@ -300,6 +355,13 @@ export default function DashboardPage() {
       </div>
 
       {isEmpty && <GettingStarted />}
+
+      <div className="mb-4">
+        <FolderTiles folders={files.folders} loading={files.loading} actions={actions} />
+      </div>
+      <div className="mb-4">
+        <RecentFiles docs={files.recent} loading={files.loading} actions={actions} />
+      </div>
 
       <div className="row g-3 g-xl-4 mb-4">
         <div className="col-xl-8">
@@ -389,13 +451,13 @@ export default function DashboardPage() {
                 </span>
                 <i className="bi bi-chevron-right ms-auto text-muted" aria-hidden="true" />
               </Link>
-              <Link to="/folders" className="fa-quick-action">
+              <Link to="/files" className="fa-quick-action">
                 <span className="fa-icon-tile fa-tone-amber" aria-hidden="true">
                   <i className="bi bi-folder2-open" />
                 </span>
                 <span>
-                  <span className="fw-semibold d-block">Browse folders</span>
-                  <span className="small text-muted">See how your files are organised</span>
+                  <span className="fw-semibold d-block">My files</span>
+                  <span className="small text-muted">Browse, rename, delete and summarise folders</span>
                 </span>
                 <i className="bi bi-chevron-right ms-auto text-muted" aria-hidden="true" />
               </Link>
@@ -403,6 +465,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+      {actions.dialogs}
     </div>
   );
 }

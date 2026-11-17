@@ -6,6 +6,7 @@ from app import create_app
 from app.api import auth as auth_module
 from app.config import TestConfig
 from app.extensions import db
+from app.services import otp
 from app.services.index import clear_cache
 
 PASSWORD = "Passw0rd!"
@@ -20,6 +21,7 @@ def app(tmp_path):
         db.session.remove()
         db.drop_all()
     clear_cache()
+    otp.clear()
     auth_module._failures.clear()
 
 

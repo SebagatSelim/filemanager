@@ -51,6 +51,8 @@ def document_json(file: File, folder_paths: dict[int, list[str]] | None = None) 
         "error_message": file.error_message,
         "uploaded_at": iso(file.uploaded_at),
         "updated_at": iso(file.updated_at),
+        "deleted_at": iso(file.deleted_at),
+        "deleted_from_path": file.deleted_from_path,
     }
 
 

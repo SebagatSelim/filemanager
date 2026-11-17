@@ -59,6 +59,8 @@ function UploadRow({ item, threshold, onResolved, onPollError, onCancel, onRemov
   }, [polling, analysis, error, item.key, onResolved, onPollError]);
 
   const confidence = item.analysis?.suggestions?.confidence;
+  // The AI's best folder for this file (an existing folder when one fits).
+  const bestFolder = item.analysis?.folder_recommendations?.[0];
 
   let statusNode = null;
   let actions = null;
@@ -237,6 +239,17 @@ function UploadRow({ item, threshold, onResolved, onPollError, onCancel, onRemov
       {(item.status === 'invalid' || item.status === 'error') && item.error && (
         <div className="fa-upload-message text-danger small mt-2" role="alert">
           {item.error}
+        </div>
+      )}
+      {item.status === 'ready' && bestFolder && (
+        <div className="fa-upload-message small mt-2">
+          <i className="bi bi-stars fa-text-cyan me-1" aria-hidden="true" />
+          AI suggests saving it in{' '}
+          <strong>
+            <i className="bi bi-folder-fill fa-folder-icon me-1" aria-hidden="true" />
+            {displayPath(bestFolder.path)}
+          </strong>{' '}
+          <span className="text-muted">({bestFolder.is_new ? 'new folder' : 'existing folder'})</span>
         </div>
       )}
       {item.status === 'failed' && (

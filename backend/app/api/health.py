@@ -19,4 +19,6 @@ def health():
         "max_upload_mb": cfg["MAX_UPLOAD_MB"],
         "low_confidence_threshold": cfg["CLASSIFICATION_CONFIDENCE_THRESHOLD"],
         "allowed_extensions": cfg["ALLOWED_EXTENSIONS"],
+        "two_factor_enabled": cfg["TWO_FACTOR_ENABLED"],
+        "email_configured": bool(cfg["SMTP_HOST"]),
     })

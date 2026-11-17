@@ -10,6 +10,7 @@ const STATUS_META = {
   AWAITING_REVIEW: { label: 'Awaiting review', tone: 'warning', icon: 'bi-hourglass-split' },
   STORED: { label: 'Stored', tone: 'success', icon: 'bi-check-circle' },
   FAILED: { label: 'Failed', tone: 'danger', icon: 'bi-exclamation-octagon' },
+  DELETED: { label: 'In Recycle bin', tone: 'secondary', icon: 'bi-trash3' },
 };
 
 export function statusMeta(status) {

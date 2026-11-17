@@ -2198,3 +2198,219 @@ button.fa-tree-toggle:hover {
   color: transparent;
   margin-bottom: 0.5rem;
 }
+
+/* ==========================================================================
+   Reviewer feedback (v0.2): OneDrive-style My files, Home, Recycle bin,
+   AI folder suggestion and two-step verification
+   ========================================================================== */
+
+/* "+ Create or upload" button at the top of the sidebar */
+.fa-create-menu {
+  position: relative;
+}
+
+.fa-create-button {
+  border-radius: 999px;
+  font-weight: 600;
+  padding: 0.55rem 1rem;
+  text-align: left;
+}
+
+/* Search box inside the Home hero */
+.fa-hero-search-row {
+  position: relative;
+  z-index: 1;
+  padding: 0 1.75rem 1.25rem;
+}
+
+.fa-home-search {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: 760px;
+  padding: 0.35rem 0.35rem 0.35rem 0.9rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.fa-home-search:focus-within {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.fa-home-search i {
+  color: #a5f3fc;
+}
+
+.fa-home-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  color: #fff;
+  background: transparent;
+  padding: 0.35rem 0;
+}
+
+.fa-home-search input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Folder cards on Home and tiles in My files */
+.fa-folder-card,
+.fa-tile {
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.fa-folder-card {
+  padding: 0.9rem;
+  border-radius: 14px;
+  border: 1px solid var(--fa-border);
+  background: #fff;
+}
+
+.fa-folder-card:hover,
+.fa-tile:hover {
+  border-color: #fcd34d;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+}
+
+.fa-tile-icon {
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.fa-summary-chip {
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.6rem;
+  color: var(--fa-cyan-600);
+  background: var(--fa-cyan-50);
+  border: 1px solid #a5f3fc;
+}
+
+.fa-summary-chip:hover {
+  background: #cffafe;
+  color: #0e7490;
+}
+
+/* Explorer tables (My files, Recent files) */
+.fa-explorer td {
+  padding-top: 0.55rem;
+  padding-bottom: 0.55rem;
+}
+
+/* Let the Name column take the free space and cut long names with "…" */
+.fa-explorer .fa-name-cell {
+  width: 100%;
+  max-width: 0;
+}
+
+.fa-explorer td:last-child,
+.fa-explorer th:last-child {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.fa-filter-input {
+  width: 180px;
+}
+
+@media (max-width: 575.98px) {
+  .fa-filter-input {
+    width: 130px;
+  }
+}
+
+.fa-breadcrumb .btn-link {
+  font-size: inherit;
+  text-decoration: none;
+  vertical-align: baseline;
+}
+
+/* The "⋯" menu must sit above the table rows and cards */
+.fa-action-menu {
+  position: relative;
+  display: inline-block;
+}
+
+.fa-action-menu .dropdown-menu {
+  right: 0;
+  left: auto;
+  z-index: 1050;
+  min-width: 190px;
+}
+
+/* AI summary text in the folder summary dialog */
+.fa-summary-text {
+  font-size: 1.02rem;
+  line-height: 1.6;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  background: var(--fa-cyan-50);
+  border: 1px solid #a5f3fc;
+}
+
+/* AI suggested folder on the review page */
+.fa-reco {
+  padding: 1rem;
+  border-radius: 14px;
+  background: linear-gradient(120deg, var(--fa-teal-50), var(--fa-cyan-50));
+  border: 1px solid #b7efe2;
+}
+
+.fa-reco-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border-radius: 12px;
+  border: 1px solid var(--fa-border);
+  background: #fff;
+  color: var(--fa-text);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fa-reco-option:hover:not(:disabled) {
+  border-color: var(--fa-teal-500);
+}
+
+.fa-reco-option.active {
+  border-color: var(--fa-teal-600);
+  box-shadow: 0 0 0 0.2rem rgba(20, 184, 166, 0.15);
+}
+
+/* Folder results in AI Search */
+.fa-folder-result {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 14px;
+  border: 1px solid var(--fa-border);
+  background: #fff;
+  color: var(--fa-teal-700);
+}
+
+.fa-folder-result:hover {
+  border-color: #fcd34d;
+  background: #fffdf5;
+}
+
+/* Two-step verification code */
+.fa-otp-input {
+  font-size: 1.6rem;
+  letter-spacing: 0.6em;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.fa-otp-demo {
+  letter-spacing: 0.15em;
+  font-size: 1rem;
+}

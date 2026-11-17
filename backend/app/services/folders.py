@@ -54,6 +54,21 @@ def folder_paths(user_id: int) -> dict[int, list[str]]:
     return paths
 
 
+def folder_and_subfolder_ids(user_id: int, folder_id: int) -> list[int]:
+    """The folder's id plus the ids of every folder inside it (any depth)."""
+    children: dict[int, list[int]] = {}
+    for f in user_folders(user_id):
+        children.setdefault(f.parent_folder_id, []).append(f.folder_id)
+    ids, todo = [], [folder_id]
+    while todo:
+        current = todo.pop()
+        if current in ids:
+            continue
+        ids.append(current)
+        todo.extend(children.get(current, []))
+    return ids
+
+
 def path_string(folder: Folder | None) -> str | None:
     if folder is None:
         return None

@@ -60,6 +60,8 @@ erDiagram
         varchar storage_key
         enum status
         datetime uploaded_at
+        datetime deleted_at
+        varchar deleted_from_path
     }
     DOCUMENT_METADATA {
         int file_id PK, FK
@@ -125,9 +127,15 @@ erDiagram
 | `file_size_bytes` | BIGINT | Stored in bytes (the proposal's "2500 KB" = 2,560,000) | 2560000 |
 | `hash_value` | CHAR(64) | SHA-256 hex | `9f86d0…` |
 | `storage_key` | VARCHAR(512) | S3 object key | `users/1001/4b1e…` |
-| `status` | ENUM | UPLOADED, PROCESSING, AWAITING_REVIEW, STORED, FAILED | STORED |
+| `status` | ENUM | UPLOADED, PROCESSING, AWAITING_REVIEW, STORED, FAILED, DELETED (in the Recycle bin, v0.2) | STORED |
 | `error_message` | VARCHAR(500), null | Reason when FAILED | |
 | `uploaded_at` / `updated_at` | DATETIME | | |
+| `deleted_at` | DATETIME, null | When the file was moved to the Recycle bin (v0.2) | |
+| `deleted_from_path` | VARCHAR(500), null | Folder path it was deleted from; **Restore** puts it back there (v0.2) | `University/Year 2` |
+
+> **Upgrading an existing database (v0.1 → v0.2):** nothing to do by hand. `backend/app/upgrade.py` adds the two
+> columns and the `DELETED` status the first time the new backend runs (or when you run `flask --app run.py init-db`).
+> Your data is kept.
 
 ### `document_metadata`
 

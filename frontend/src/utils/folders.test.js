@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { ancestorIds, childNamesAt, displayPath, findFolderById, flattenFolders, joinPath, splitPath } from './folders';
+import {
+  ancestorIds,
+  childNamesAt,
+  countDocumentsDeep,
+  displayPath,
+  findFolderById,
+  flattenFolders,
+  joinPath,
+  splitPath,
+} from './folders';
 
 const tree = [
   {
@@ -54,5 +63,11 @@ describe('folder helpers', () => {
     expect(childNamesAt(tree, [])).toEqual(['University', 'Finance']);
     expect(childNamesAt(tree, ['university'])).toEqual(['Year 2']);
     expect(childNamesAt(tree, ['Nope'])).toEqual([]);
+  });
+
+  it('counts documents including subfolders', () => {
+    expect(countDocumentsDeep(tree[0])).toBe(6); // 3 + 2 + 1
+    expect(countDocumentsDeep(tree[1])).toBe(5);
+    expect(countDocumentsDeep(null)).toBe(0);
   });
 });

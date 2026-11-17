@@ -59,11 +59,13 @@ CREATE TABLE files (
   file_size_bytes  BIGINT UNSIGNED NOT NULL,
   hash_value       CHAR(64)        NOT NULL,           -- SHA-256 hex digest
   storage_key      VARCHAR(512)    NOT NULL,           -- S3 object key
-  status           ENUM('UPLOADED','PROCESSING','AWAITING_REVIEW','STORED','FAILED')
-                                   NOT NULL DEFAULT 'UPLOADED',
+  status           ENUM('UPLOADED','PROCESSING','AWAITING_REVIEW','STORED','FAILED','DELETED')
+                                   NOT NULL DEFAULT 'UPLOADED',  -- DELETED = in the Recycle bin
   error_message    VARCHAR(500)    NULL,               -- filled when status = FAILED
   uploaded_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  deleted_at       DATETIME        NULL,               -- when it was moved to the Recycle bin (v0.2)
+  deleted_from_path VARCHAR(500)   NULL,               -- folder it came from, used by Restore (v0.2)
   PRIMARY KEY (file_id),
   KEY idx_files_user_hash   (user_id, hash_value),     -- exact-duplicate lookup is per user
   KEY idx_files_user_folder (user_id, folder_id),

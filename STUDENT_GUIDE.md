@@ -168,6 +168,9 @@ npm install
 3. Sign in with the demo account:
    - **Email:** `demo@fileai.test`
    - **Password:** `Demo@12345`
+   - **Verification code:** sign-in now has a second step (two-step verification). Until an email server is set up
+     (Part 12) the app runs in **demo mode** and shows the 6-digit code on the screen — click **Use it**, then
+     **Verify and sign in**. The code is also printed in the **FileAI API** window.
 
 **Manual way** (or on macOS) — use two terminals:
 
@@ -193,16 +196,19 @@ Then open <http://localhost:5173> in Chrome, Edge or Firefox.
 
 ## 6. Use the app — a guided tour
 
+The layout works like **OneDrive**: a **+ Create or upload** button at the top of the left menu (Upload files / New folder), then Home, My files, AI Search, Review Queue and Recycle bin.
+
 | Page (left menu) | What to try |
 |---|---|
-| **Dashboard** | Totals, AI-classified count, duplicates found, storage used, upload chart, recent activity |
-| **Upload Files** | Drag a PDF/DOCX/TXT/PNG/JPG onto the box (or click **Browse files**). Watch the progress bar, then "Analysis ready" → **Review** |
+| **Home** | Ask-AI search box, totals, **Your folders** (each with an **AI summary** button) and **Recent files** (like OneDrive) with *Filter by name* and a **⋯** menu: Open, Download, Rename, Delete |
+| **+ Create or upload → Upload files** | Drag a PDF/DOCX/TXT/PNG/JPG onto the box (or click **Browse files**). Watch the progress bar, then "Analysis ready" — the row says which folder the AI suggests → **Review** |
 | **Review Queue** | Documents waiting for your approval. The demo account has one: `Database_Assignment_v2.txt`, flagged as **97% similar** to an existing file |
-| **AI review page** | Check the AI's title, filename, category, folder, keywords and summary. Edit anything, then **Approve & Save**, or **Discard upload** |
-| **AI Search** | Type a question like *Find my Semester 1 Database assignment*, *internet invoice*, *my resume*, *flight to Kuala Lumpur* |
-| **Documents** | All your files. Filter by category, type or folder; sort by date or name |
-| **Document details** | Preview (PDF/images shown directly, Word/TXT as text), all AI metadata, and **Edit / Move / Download / Delete** |
-| **All Folders** | The folder tree the AI built (University, Finance, Career, …) |
+| **AI review page** | The **AI suggested folder** card lists your best **existing** folders with the reason (e.g. *"1 similar document is already here"*); the best one is already chosen. Check the title, filename, category, keywords and summary, then **Approve & Save**, or **Discard upload** |
+| **My files** | The file explorer: click folders to open them, go back with the breadcrumb (*My files / University / Year 2*), list or tiles view, **New folder**, **Summarise with AI**, **Rename**, **Delete** |
+| **AI Search** | Type a question like *Find my Semester 1 Database assignment*, *invoices*, *my resume*, *flight booking*. Matching **folders** are shown first — click **Open** to jump into the folder |
+| **Recycle bin** | Deleted files wait here. **Restore** puts a file back in its old folder; **Empty recycle bin** deletes for good |
+| **All documents** | All your files in one list. Filter by category, type or folder; sort by date or name |
+| **Document details** | Preview (PDF/images shown directly, Word/TXT as text), all AI metadata, and **Edit / Rename / Move / Download / Move to Recycle bin** |
 | **Categories** | Documents grouped by category |
 | **Profile & Settings** | Change name, email, password; see storage use and which AI is running |
 
@@ -210,7 +216,10 @@ Then open <http://localhost:5173> in Chrome, Edge or Firefox.
 
 - Upload the **same file twice** → you get *"You already have this file"* with **Upload anyway / Cancel**.
 - Upload a file with the wrong type (e.g. `.exe`) → it is rejected.
-- **Register** a new account with a weak password → the checklist shows which rules are missing (8+ characters, uppercase, lowercase, number, special character).
+- **Register** a new account with a weak password → the checklist shows which rules are missing (8+ characters, uppercase, lowercase, number, special character). With a good password you get a **"Confirm your email"** step: type the 6-digit code and the new account is created and signed in.
+- Type a wrong verification code → *"That code is not correct"*. After 5 wrong codes you must ask for a new one.
+- Upload a new database document (e.g. *"Unit: NIT2102 Database Systems … SQL lab"*) → the AI suggests the **existing** `University / Year 2 / Semester 1 / Database Systems` folder.
+- **Delete** a folder in My files → its documents go to the **Recycle bin** → **Restore** brings them back (the folders are re-created).
 - Log in with a wrong password 5 times → the account is locked for 5 minutes (security feature).
 - Log in as a second user → you cannot see the first user's files.
 
@@ -222,16 +231,17 @@ Practise this once before the presentation. Start the app (Part 5) and log in **
 
 | Time | Show | Say |
 |---|---|---|
-| 0:00 | Dashboard | "This is FileAI. The dashboard shows how many documents the AI has organised, duplicates found and storage used." |
-| 0:45 | Upload Files → drop a new file | "When I upload a file, the backend checks it, extracts the text and runs our AI analysis in the background." |
-| 1:30 | Review page | "The AI suggests a title, category, filename, folder, keywords and summary. Nothing is saved until I approve, so the user stays in control." → **Approve & Save** |
+| 0:00 | Sign-in with the code | "Sign-in is two-step: after the password, a 6-digit code is emailed. Here it runs in demo mode, so the code is shown on screen." |
+| 0:30 | Home | "Like OneDrive, Home shows my folders and my recent files. I can rename, delete or ask the AI to summarise a folder." → click **AI summary** on *University* |
+| 1:00 | Upload Files → drop a new file | "When I upload a file, the backend checks it, extracts the text and runs our AI analysis in the background." |
+| 1:30 | Review page | "The AI recommends one of my **existing** folders and tells me why — here, a similar document is already in Database Systems. Nothing is saved until I approve." → **Approve & Save** |
 | 2:15 | Upload the same file again | "Duplicate detection: SHA-256 hashing catches exact copies." |
 | 2:45 | Review Queue → `Database_Assignment_v2.txt` | "Edited copies are caught too — this one is 97% similar to an existing assignment." |
 | 3:15 | AI Search → *Find my Semester 1 Database assignment* | "Natural-language search finds documents by meaning and keywords, in milliseconds." |
-| 4:00 | Document details → PDF preview, Folders page | "Every document has its metadata, preview, and actions. The folder tree was built automatically." |
+| 4:00 | My files → open folders, **Delete** a file → Recycle bin → **Restore** | "My files works like OneDrive: breadcrumb, rename, delete and a Recycle bin, so nothing is lost by mistake." |
 | 4:30 | Settings → AI & Privacy | "Security: BCrypt passwords, JWT sessions, per-user access, signed download links. The AI runs locally, so no document text leaves the server." |
 
-Key numbers you can quote (from our tests, see [Testing Strategy](docs/11-testing-strategy.md)): upload confirmed in **~0.1 s** (target 3 s), AI processing **~0.5 s** (target 30 s), search **20–60 ms** (target 2 s), **80 backend + 85 frontend automated tests** passing, **9/9** sample documents classified correctly.
+Key numbers you can quote (from our tests, see [Testing Strategy](docs/11-testing-strategy.md)): upload confirmed in **~0.1 s** (target 3 s), AI processing **~0.5 s** (target 30 s), search **20–60 ms** (target 2 s), **99 backend + 93 frontend automated tests** passing, **9/9** sample documents classified correctly.
 
 ## 8. Stop the app
 
@@ -255,6 +265,10 @@ Your data stays in MySQL and `backend/uploads/` for next time.
 | Image or scanned PDF shows *"OCR is not installed"* | Tesseract isn't installed | Expected without OCR. Install Tesseract (Part 12), or type the details in yourself and approve |
 | *"Too many failed sign-in attempts"* | Security lockout after 5 wrong passwords | Wait 5 minutes, or restart the backend window |
 | *"Your session has expired"* | Login lasts 30 minutes | Sign in again |
+| Where is my sign-in code? | No email server is set up (demo mode) | The code is shown on the sign-in page and printed in the **FileAI API** window. To send real emails see Part 12 |
+| *"We couldn't send the verification email"* | The SMTP settings in `backend\.env` are wrong | Check `SMTP_HOST`, `SMTP_USERNAME` and the Gmail **app password**, or empty `SMTP_HOST` to go back to demo mode |
+| *"This code has expired"* / *"Too many wrong codes"* | Codes last 10 minutes and allow 5 tries | Click **Resend code** |
+| `Unknown column 'files.deleted_at'` | Database made by v0.1 | Restart the backend (it upgrades the database itself), or run `.venv\Scripts\python -m flask --app run.py init-db` once |
 | Demo account missing / want a clean start | — | In `backend`: `.venv\Scripts\python -m flask --app run.py init-db --drop` (type `y` to confirm — **deletes all data**), then `... seed-demo` |
 | `setup.bat` window closes immediately | Error before the first message | Open Command Prompt in the project folder and type `setup.bat` to read the error |
 
@@ -309,6 +323,22 @@ All of these are switched on in `backend\.env`. **Restart the backend window aft
 2. In `backend\.env` set
    `TESSERACT_CMD=C:\Program Files\Tesseract-OCR\tesseract.exe`
 3. Restart the backend. **Profile & Settings → AI & Privacy** should now show OCR as available.
+
+**Real emails for the sign-in codes (two-step verification)**
+
+1. Use a Gmail account for the project. Turn on **2-Step Verification** for it, then create an **App password**
+   (Google Account → Security → App passwords). It is a 16-character password just for this app.
+2. In `backend\.env` set
+
+   ```text
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_USERNAME=yourproject@gmail.com
+   SMTP_PASSWORD=the16characterapppassword
+   ```
+
+3. Restart the backend. Codes are now emailed and are **no longer shown on screen**.
+   To switch two-step verification off completely (not recommended): `TWO_FACTOR_ENABLED=false`.
 
 **OpenAI GPT instead of the built-in AI**
 

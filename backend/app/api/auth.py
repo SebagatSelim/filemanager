@@ -1,4 +1,11 @@
-"""Registration and login (FR-01, NFR-02)."""
+"""Registration and login (FR-01, NFR-02), with two-step verification by email code (OTP).
+
+With TWO_FACTOR_ENABLED (the default):
+  Sign up : POST /auth/register        -> code emailed  -> POST /auth/register/verify -> account created + signed in
+  Sign in : POST /auth/login (password) -> code emailed  -> POST /auth/login/verify    -> signed in
+  POST /auth/resend-code sends a new code for either step.
+With it switched off, register and login work in one step as before.
+"""
 import re
 import threading
 import time
@@ -11,7 +18,8 @@ from ..errors import APIError, validation_error
 from ..extensions import db
 from ..models import User, utcnow
 from ..serializers import user_json
-from ..services import audit
+from ..services import audit, otp
+from ..services.mailer import send_code
 from .helpers import current_user_id, json_body
 
 bp = Blueprint("auth", __name__)
@@ -104,12 +112,25 @@ def register():
     if User.query.filter_by(email=email).first():
         raise APIError(409, "EMAIL_EXISTS", "An account with this email already exists.", {"email": "Already registered"})
 
-    user = User(name=name, email=email, password_hash=hash_password(password))
-    db.session.add(user)
-    db.session.flush()
-    audit.record(user.user_id, "REGISTER")
-    db.session.commit()
+    if current_app.config["TWO_FACTOR_ENABLED"]:
+        # Don't create the account yet: first prove the email address is real and belongs to this person.
+        pending = {"name": name, "password_hash": hash_password(password)}
+        return _send_code_response("register", email, name, pending)
+
+    user = _create_user(name, email, hash_password(password))
     return jsonify({"user_id": user.user_id, "message": "Registration successful. You can now sign in."}), 201
+
+
+@bp.post("/auth/register/verify")
+def verify_registration():
+    data = json_body()
+    email = normalise_email(data.get("email"))
+    pending = otp.check_code("register", email, data.get("code"))
+    if User.query.filter_by(email=email).first():
+        raise APIError(409, "EMAIL_EXISTS", "An account with this email already exists.", {"email": "Already registered"})
+    user = _create_user(pending["name"], email, pending["password_hash"])
+    # The email is confirmed, so sign the new user straight in.
+    return jsonify(_sign_in(user)), 201
 
 
 @bp.post("/auth/login")
@@ -132,12 +153,90 @@ def login():
 
     with _failures_lock:
         _failures.pop(email, None)
+    if current_app.config["TWO_FACTOR_ENABLED"]:
+        # Step 2 of 2: the password was right, now prove you can read this account's email.
+        return _send_code_response("login", email, user.name, {"user_id": user.user_id})
+    return jsonify(_sign_in(user))
+
+
+@bp.post("/auth/login/verify")
+def verify_login():
+    data = json_body()
+    email = normalise_email(data.get("email"))
+    if _locked_out(email):
+        raise APIError(429, "TOO_MANY_ATTEMPTS", "Too many failed sign-in attempts. Please wait a few minutes and try again.")
+    try:
+        pending = otp.check_code("login", email, data.get("code"))
+    except APIError as error:
+        if error.code in ("WRONG_CODE", "TOO_MANY_ATTEMPTS"):
+            _note_failure(email)  # wrong codes count towards the lockout too
+        raise
+    user = db.session.get(User, pending["user_id"])
+    if user is None:
+        raise APIError(401, "UNAUTHORIZED", GENERIC_LOGIN_ERROR)
+    return jsonify(_sign_in(user))
+
+
+@bp.post("/auth/resend-code")
+def resend_code():
+    """Send a fresh code for a sign-up or sign-in that is still waiting for one."""
+    data = json_body()
+    email = normalise_email(data.get("email"))
+    purpose = data.get("purpose")
+    if purpose not in ("register", "login"):
+        raise validation_error("purpose must be 'register' or 'login'.")
+    pending = otp.pending_data(purpose, email)
+    if pending is None:
+        raise APIError(400, "CODE_NOT_FOUND", "Your session has expired. Please start again.")
+    name = pending.get("name") or ""
+    if purpose == "login":
+        user = db.session.get(User, pending["user_id"])
+        name = user.name if user else ""
+    return _send_code_response(purpose, email, name, pending)
+
+
+# ---------------------------------------------------------------- helpers
+def _create_user(name: str, email: str, password_hash: str) -> User:
+    user = User(name=name, email=email, password_hash=password_hash)
+    db.session.add(user)
+    db.session.flush()
+    audit.record(user.user_id, "REGISTER")
+    db.session.commit()
+    return user
+
+
+def _sign_in(user: User) -> dict:
+    """Record the login and return the JWT for the browser."""
     user.last_login_at = utcnow()
     audit.record(user.user_id, "LOGIN")
     db.session.commit()
     expires = current_app.config["JWT_ACCESS_TOKEN_EXPIRES"]
     token = create_access_token(identity=str(user.user_id))
-    return jsonify({"access_token": token, "expires_in": int(expires.total_seconds()), "user": user_json(user)})
+    return {"access_token": token, "expires_in": int(expires.total_seconds()), "user": user_json(user)}
+
+
+def _mask(email: str) -> str:
+    """'alex.chen@uni.edu' -> 'al*******@uni.edu' (shown on screen)."""
+    local, _, domain = email.partition("@")
+    return f"{local[:2]}{'*' * max(len(local) - 2, 1)}@{domain}"
+
+
+def _send_code_response(purpose: str, email: str, name: str, pending: dict):
+    code = otp.new_code(purpose, email, pending)
+    emailed = send_code(email, name, code, purpose)
+    body = {
+        "verification_required": True,
+        "purpose": purpose,
+        "email": email,
+        "sent_to": _mask(email),
+        "expires_in": current_app.config["OTP_EXPIRES_MIN"] * 60,
+        "message": f"We sent a 6-digit code to {_mask(email)}.",
+    }
+    if not emailed:
+        # DEMO MODE only (no email server configured): show the code so the app can be demonstrated.
+        body["demo_code"] = code
+        body["message"] = "Demo mode: no email server is set up, so your code is shown here."
+    return jsonify(body), 202
 
 
 @bp.get("/auth/me")

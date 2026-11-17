@@ -9,6 +9,9 @@ vi.mock('../api/auth', () => ({
   login: vi.fn(),
   logout: vi.fn(),
   register: vi.fn(),
+  verifyLogin: vi.fn(),
+  verifyRegistration: vi.fn(),
+  resendCode: vi.fn(),
   getMe: vi.fn(() => new Promise(() => {})),
 }));
 
@@ -89,5 +92,35 @@ describe('RegisterPage', () => {
     await user.click(screen.getByRole('button', { name: 'Create account' }));
     expect(await screen.findByText('Email is already registered.')).toBeInTheDocument();
     expect(screen.getByLabelText('Email address')).toHaveClass('is-invalid');
+  });
+
+  it('confirms the email with a code, then signs the new user in', async () => {
+    authApi.register.mockResolvedValue({
+      verification_required: true,
+      purpose: 'register',
+      email: 'alex@uni.edu',
+      sent_to: 'al**@uni.edu',
+    });
+    authApi.verifyRegistration.mockResolvedValue({
+      access_token: 'jwt-new',
+      expires_in: 1800,
+      user: { user_id: 7, name: 'Alex Chen', email: 'alex@uni.edu' },
+    });
+    const user = userEvent.setup();
+    renderWithProviders({
+      initialPath: '/register',
+      routes: [
+        { path: '/register', element: <RegisterPage /> },
+        { path: '/', element: <h1>Home</h1> },
+      ],
+    });
+    await fillForm(user);
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+
+    expect(await screen.findByRole('heading', { name: 'Confirm your email' })).toBeInTheDocument();
+    await user.type(screen.getByLabelText('Verification code'), '654321');
+    await user.click(screen.getByRole('button', { name: 'Verify and create account' }));
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(/^\/$/));
+    expect(authApi.verifyRegistration).toHaveBeenCalledWith({ email: 'alex@uni.edu', code: '654321' });
   });
 });

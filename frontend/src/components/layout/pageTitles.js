@@ -4,14 +4,15 @@ import { matchPath } from 'react-router-dom';
 const PAGE_TITLES = [
   ['/documents/:id/review', 'AI Analysis & Metadata'],
   ['/documents/:id', 'Document Details'],
-  ['/documents', 'Documents'],
+  ['/documents', 'All documents'],
   ['/upload', 'Upload Files'],
   ['/search', 'AI Search'],
   ['/review', 'Review Queue'],
-  ['/folders', 'All Folders'],
+  ['/files', 'My files'],
+  ['/recycle-bin', 'Recycle bin'],
   ['/categories', 'Categories'],
   ['/settings', 'Profile & Settings'],
-  ['/', 'Dashboard'],
+  ['/', 'Home'],
 ];
 
 export function getPageTitle(pathname) {

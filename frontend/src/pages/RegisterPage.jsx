@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import AuthShell from '../components/AuthShell';
 import PasswordInput from '../components/PasswordInput';
 import PasswordChecklist from '../components/PasswordChecklist';
+import VerificationCodeStep from '../components/VerificationCodeStep';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { getApiError } from '../api/client';
@@ -25,6 +26,8 @@ export default function RegisterPage() {
   const [serverErrors, setServerErrors] = useState({});
   const [apiError, setApiError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // Set when the server emailed a code to confirm the address (the account is created after it).
+  const [verification, setVerification] = useState(null);
 
   // After the first submit attempt, errors update live as the user types.
   const clientErrors = submitted ? validateRegistration(form) : {};
@@ -52,11 +55,16 @@ export default function RegisterPage() {
     setSubmitting(true);
     try {
       const email = form.email.trim();
-      await register({
+      const result = await register({
         name: `${form.firstName.trim()} ${form.lastName.trim()}`,
         email,
         password: form.password,
       });
+      if (result?.verification_required) {
+        setVerification(result);
+        setSubmitting(false);
+        return;
+      }
       toast.success('Account created. Please sign in.');
       navigate('/login', { replace: true, state: { registered: true, email } });
     } catch (err) {
@@ -105,6 +113,21 @@ export default function RegisterPage() {
       )}
     </div>
   );
+
+  if (verification) {
+    return (
+      <AuthShell title="Confirm your email" subtitle="One last step to create your account">
+        <VerificationCodeStep
+          verification={verification}
+          onVerified={() => {
+            toast.success('Your account is ready. Welcome to FileAI!');
+            navigate('/', { replace: true });
+          }}
+          onBack={() => setVerification(null)}
+        />
+      </AuthShell>
+    );
+  }
 
   return (
     <AuthShell title="Create your account" subtitle="Start organising with AI — it takes 30 seconds">
