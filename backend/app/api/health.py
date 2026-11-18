@@ -2,7 +2,7 @@
 from flask import Blueprint, current_app, jsonify
 
 from ..services.ai import provider_info
-from ..services.extraction import ocr_available
+from ..services.extraction import ocr_available, ocr_provider
 from ..services.storage import get_storage
 
 bp = Blueprint("health", __name__)
@@ -15,6 +15,7 @@ def health():
         "status": "ok",
         **provider_info(),
         "ocr_available": ocr_available(),
+        "ocr_provider": ocr_provider(),  # tesseract | openai (GPT vision) | null
         "storage_backend": get_storage().name,
         "max_upload_mb": cfg["MAX_UPLOAD_MB"],
         "low_confidence_threshold": cfg["CLASSIFICATION_CONFIDENCE_THRESHOLD"],

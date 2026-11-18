@@ -31,6 +31,30 @@ def register_cli(app: Flask) -> None:
         user, count = seed(email, password)
         click.echo(f"Demo account ready: {user.email} / {password}  ({count} documents added)")
 
+    @app.cli.command("send-test-email")
+    @click.argument("to")
+    def send_test_email(to: str):
+        """Send a sample verification-code email to TO, to check the SMTP settings in .env."""
+        from email.message import EmailMessage
+
+        from .services.mailer import email_configured, send_message
+
+        if not email_configured():
+            raise click.ClickException("SMTP_HOST is empty in .env, so the app is in demo mode (no emails).")
+        cfg = app.config
+        mode = "SSL" if cfg["SMTP_USE_SSL"] else ("STARTTLS" if cfg["SMTP_USE_TLS"] else "plain")
+        click.echo(f"Sending through {cfg['SMTP_HOST']}:{cfg['SMTP_PORT']} ({mode}) as {cfg['MAIL_FROM']} ...")
+        message = EmailMessage()
+        message["Subject"] = "FileAI test email"
+        message["From"] = cfg["MAIL_FROM"]
+        message["To"] = to
+        message.set_content("This is a test from FileAI. The email settings work, so sign-in codes will arrive.")
+        try:
+            send_message(message)
+        except Exception as exc:
+            raise click.ClickException(f"Could not send: {exc}")
+        click.echo(f"Sent. Check the inbox (and spam folder) of {to}.")
+
     @app.cli.command("reindex")
     def reindex():
         """Recompute every embedding (run after changing EMBEDDING_PROVIDER)."""
@@ -52,7 +76,10 @@ def _create_mysql_database_if_missing(app: Flask) -> None:
     url = sa.engine.make_url(app.config["SQLALCHEMY_DATABASE_URI"])
     if not url.drivername.startswith("mysql") or not url.database:
         return
-    server = sa.create_engine(url.set(database=None))
+    # Connect to the server without choosing a database (url.set(database=None) would keep the name).
+    server_url = sa.engine.URL.create(url.drivername, username=url.username, password=url.password,
+                                      host=url.host, port=url.port, query=url.query)
+    server = sa.create_engine(server_url)
     with server.connect() as conn:
         conn.execute(sa.text(
             f"CREATE DATABASE IF NOT EXISTS `{url.database}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"))

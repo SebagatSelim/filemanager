@@ -109,3 +109,81 @@ def test_expired_code_is_refused(client, monkeypatch):
 def test_health_reports_two_factor_settings(client):
     data = client.get("/api/health").get_json()
     assert data["two_factor_enabled"] is True and data["email_configured"] is False
+
+
+# ---------------------------------------------------------------- real email sending (SMTP is faked)
+class FakeSMTP:
+    sent = []
+
+    def __init__(self, host, port, timeout=None, context=None):
+        self.host, self.port, self.ssl, self.steps = host, port, context is not None, []
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def starttls(self, context=None):
+        self.steps.append("starttls")
+
+    def login(self, username, password):
+        self.steps.append(f"login:{username}")
+
+    def send_message(self, message):
+        FakeSMTP.sent.append((self, message))
+
+
+@pytest.fixture
+def fake_smtp(monkeypatch):
+    from app.services import mailer
+
+    FakeSMTP.sent = []
+    monkeypatch.setattr(mailer.smtplib, "SMTP", FakeSMTP)
+    monkeypatch.setattr(mailer.smtplib, "SMTP_SSL", FakeSMTP)
+    return FakeSMTP
+
+
+@pytest.mark.parametrize("use_ssl, steps", [(True, ["login:me@example.com"]),
+                                            (False, ["starttls", "login:me@example.com"])])
+def test_code_is_emailed_over_ssl_or_starttls(client, fake_smtp, use_ssl, steps):
+    client.application.config.update(SMTP_HOST="smtp.example.com", SMTP_PORT=465 if use_ssl else 587,
+                                     SMTP_USE_SSL=use_ssl, SMTP_USE_TLS=True, SMTP_USERNAME="me@example.com",
+                                     SMTP_PASSWORD="secret", MAIL_FROM="FileAI <me@example.com>")
+    body = start_register(client).get_json()
+    assert "demo_code" not in body  # a real email was sent, so the code is not shown on screen
+    (smtp, message), = fake_smtp.sent
+    assert (smtp.host, smtp.ssl, smtp.steps) == ("smtp.example.com", use_ssl, steps)
+    assert message["To"] == EMAIL and message["From"] == "FileAI <me@example.com>"
+    assert message["Message-ID"].endswith("@example.com>")
+    code = next(word for word in message.get_content().split() if word.isdigit() and len(word) == 6)
+    res = client.post("/api/auth/register/verify", json={"email": EMAIL, "code": code})
+    assert res.status_code == 201
+
+
+def test_email_failure_is_reported_to_the_user(client, monkeypatch):
+    from app.services import mailer
+
+    def broken(*args, **kwargs):
+        raise OSError("connection refused")
+
+    monkeypatch.setattr(mailer.smtplib, "SMTP_SSL", broken)
+    client.application.config.update(SMTP_HOST="smtp.example.com", SMTP_PORT=465, SMTP_USE_SSL=True)
+    res = start_register(client)
+    assert res.status_code == 502 and res.get_json()["error"]["code"] == "EMAIL_FAILED"
+
+
+
+def test_without_an_email_server_the_code_is_never_shown(client, fake_smtp):
+    """EMAIL_DEMO_MODE is off by default: no email server means an error, never a code on screen."""
+    client.application.config.update(SMTP_HOST="", EMAIL_DEMO_MODE=False)
+    res = start_register(client)
+    assert res.status_code == 503 and res.get_json()["error"]["code"] == "EMAIL_NOT_SET_UP"
+    assert "demo_code" not in res.get_json() and fake_smtp.sent == []
+
+
+def test_demo_mode_never_shows_the_code_once_email_is_set_up(client, fake_smtp):
+    client.application.config.update(SMTP_HOST="smtp.example.com", SMTP_PORT=465, SMTP_USE_SSL=True,
+                                     EMAIL_DEMO_MODE=True)
+    assert "demo_code" not in start_register(client).get_json()
+    assert len(fake_smtp.sent) == 1

@@ -53,12 +53,19 @@ class Config:
     # Leave SMTP_HOST empty for DEMO MODE: the code is printed in the backend window and shown on screen.
     # Gmail example: SMTP_HOST=smtp.gmail.com, SMTP_PORT=587, SMTP_USERNAME=you@gmail.com,
     #                SMTP_PASSWORD=<16-character app password>
+    # Hostinger example: SMTP_HOST=smtp.hostinger.com, SMTP_PORT=465 (SSL) or 587 (STARTTLS)
     SMTP_HOST = os.getenv("SMTP_HOST", "")
     SMTP_PORT = _int("SMTP_PORT", 587)
     SMTP_USERNAME = os.getenv("SMTP_USERNAME", "")
     SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+    # SSL from the first byte (port 465). Defaults to on for port 465, off otherwise.
+    SMTP_USE_SSL = _bool("SMTP_USE_SSL", _int("SMTP_PORT", 587) == 465)
+    # STARTTLS upgrade after connecting (port 587). Ignored when SMTP_USE_SSL is on.
     SMTP_USE_TLS = _bool("SMTP_USE_TLS", True)
     MAIL_FROM = os.getenv("MAIL_FROM", "") or os.getenv("SMTP_USERNAME", "") or "FileAI <no-reply@fileai.local>"
+    # Only for a classroom demo with no email server: show the code on screen instead of emailing it.
+    # Off by default, so codes only ever go to the user's inbox. Has no effect once SMTP_HOST is set.
+    EMAIL_DEMO_MODE = _bool("EMAIL_DEMO_MODE", False)
 
     # ---------- Database ----------
     SQLALCHEMY_DATABASE_URI = os.getenv(
@@ -116,3 +123,11 @@ class TestConfig(Config):
     TESSERACT_CMD = ""
     TWO_FACTOR_ENABLED = False  # tests that need it switch it on (see test_two_factor.py)
     SMTP_HOST = ""
+    SMTP_PORT = 587
+    SMTP_USERNAME = ""
+    SMTP_PASSWORD = ""
+    SMTP_USE_SSL = False
+    SMTP_USE_TLS = True
+    MAIL_FROM = "FileAI <no-reply@fileai.local>"
+    EMAIL_DEMO_MODE = True  # tests read the code from the response
+    OPENAI_API_KEY = ""
