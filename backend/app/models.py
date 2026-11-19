@@ -13,7 +13,7 @@ LongText = sa.Text().with_variant(mysql.MEDIUMTEXT(), "mysql")
 FILE_TYPES = ("PDF", "DOCX", "TXT", "PNG", "JPG")
 # DELETED = in the Recycle bin (can be restored or deleted for good).
 FILE_STATUSES = ("UPLOADED", "PROCESSING", "AWAITING_REVIEW", "STORED", "FAILED", "DELETED")
-EXTRACTION_METHODS = ("PYMUPDF", "PYTHON_DOCX", "TESSERACT_OCR", "PLAIN_TEXT")
+EXTRACTION_METHODS = ("PYMUPDF", "PYTHON_DOCX", "TESSERACT_OCR", "PLAIN_TEXT", "OPENAI_VISION")
 DUPLICATE_TYPES = ("EXACT", "SIMILAR")
 AUDIT_ACTIONS = (
     "REGISTER", "LOGIN", "LOGIN_FAILED", "UPLOAD", "APPROVE", "VIEW", "DOWNLOAD",
@@ -101,6 +101,7 @@ class DocumentMetadata(db.Model):
     document_type = db.Column(db.String(100))
     suggested_filename = db.Column(db.String(255))
     suggested_folder_path = db.Column(db.String(500))
+    folder_reason = db.Column(db.String(300))  # the AI's one-line reason for the suggested folder
     classification_confidence = db.Column(db.Numeric(5, 4))
     extracted_text = db.Column(LongText)
     extraction_method = db.Column(db.Enum(*EXTRACTION_METHODS, name="extraction_method"))

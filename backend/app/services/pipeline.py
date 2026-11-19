@@ -132,6 +132,7 @@ def process_document(file_id: int) -> None:
         meta.title, meta.summary = result.title, result.summary
         meta.category, meta.subject, meta.document_type = result.category, result.subject, result.document_type
         meta.suggested_filename, meta.suggested_folder_path = result.suggested_filename, "/".join(folder)
+        meta.folder_reason = (result.folder_reason or "")[:300] or None
         meta.classification_confidence = result.confidence
         meta.extracted_text, meta.extraction_method, meta.ai_model = text, method, result.model
         meta.is_user_approved, meta.approved_at = False, None

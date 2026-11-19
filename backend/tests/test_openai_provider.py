@@ -65,3 +65,44 @@ def test_short_text_skips_the_api():
     analyzer, calls = make_analyzer([])
     result = analyzer.analyze("tiny", "photo.jpg", [], ".jpg")
     assert calls.calls == 0 and result.category == "Uncategorised"
+
+
+def gpt_reply(**overrides):
+    data = {
+        "title": "SQL Lab 5", "summary": "Joins and normal forms.", "category": "University",
+        "subject": "Database Systems", "document_type": "Lab Sheet", "keywords": ["SQL", "joins"],
+        "suggested_filename": "SQL_Lab_5", "existing_folder": "", "suggested_folder_path": ["University"],
+        "folder_reason": "", "confidence": 0.9,
+    }
+    data.update(overrides)
+    return json.dumps(data)
+
+
+EXISTING = [["University"], ["University", "Year 2"], ["University", "Year 2", "Database Systems"], ["Finance"]]
+
+
+def test_gpt_picks_an_existing_folder_with_its_real_spelling_and_reason():
+    reply = gpt_reply(existing_folder="university/year 2/DATABASE SYSTEMS",
+                      suggested_folder_path=["University", "Databases"],
+                      folder_reason="Same course as the other Database Systems work.")
+    analyzer, _ = make_analyzer([reply])
+    result = analyzer.analyze(TEXT, "lab.pdf", EXISTING, ".pdf")
+    assert result.suggested_folder_path == ["University", "Year 2", "Database Systems"]
+    assert result.folder_reason == "Same course as the other Database Systems work."
+
+
+def test_gpt_folder_that_does_not_exist_falls_back_to_its_suggested_path():
+    reply = gpt_reply(existing_folder="University/Year 9/Made Up", suggested_folder_path=["University", "Networks"])
+    analyzer, _ = make_analyzer([reply])
+    result = analyzer.analyze(TEXT, "lab.pdf", EXISTING, ".pdf")
+    assert result.suggested_folder_path == ["University", "Networks"]
+
+
+def test_prompt_sends_the_existing_folders_to_gpt():
+    analyzer, calls = make_analyzer([gpt_reply()])
+    sent = []
+    original = calls.create
+    calls.create = lambda **kwargs: sent.append(kwargs) or original(**kwargs)
+    analyzer.analyze(TEXT, "lab.pdf", EXISTING, ".pdf")
+    user_message = sent[0]["messages"][1]["content"]
+    assert "University/Year 2/Database Systems" in user_message

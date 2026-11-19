@@ -10,7 +10,8 @@ from .local import LocalAnalyzer
 
 log = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = f"""You organise a person's digital documents. Read the document and reply with ONE JSON object:
+SYSTEM_PROMPT = f"""You organise a person's digital documents. You get the document text and the list of folders
+the person ALREADY has. Reply with ONE JSON object:
 {{
   "title": "clear human-readable title",
   "summary": "1-2 sentences, max 300 characters",
@@ -19,13 +20,26 @@ SYSTEM_PROMPT = f"""You organise a person's digital documents. Read the document
   "document_type": "e.g. Assignment, Invoice, Resume, Lecture Notes, Contract",
   "keywords": ["3 to 8 short keywords"],
   "suggested_filename": "Words_Joined_By_Underscores without extension, max 80 characters",
+  "folder_reason": "one short sentence (max 150 characters) telling the person where this belongs and why",
+  "existing_folder": "the ONE folder from the existing-folders list this document belongs in, copied exactly, or \\"\\" if none fits",
   "suggested_folder_path": ["2 to 5 folder names, general to specific"],
   "confidence": number between 0 and 1 for how sure you are about the category
 }}
-Rules:
+Rules for the folder (decide it in "folder_reason" first, then fill the other two fields to match it):
+- A folder fits only if its OWN name (the last part of the path) is this document's subject or kind of document:
+  "Database Systems" for a Database Systems lab, "Invoices" or "2026" under Invoices for a 2026 bill.
+  A folder named after a different subject never fits, even when it is the only folder in that semester or area:
+  a Computer Networks lab does NOT go in ".../Database Systems".
+- If a folder fits, set "existing_folder" to the DEEPEST fitting one and "suggested_folder_path" to its names, e.g.
+  "University/Year 2/Semester 1/Database Systems" -> ["University", "Year 2", "Semester 1", "Database Systems"].
+- If none fits, set "existing_folder" to "" and suggest a NEW path that starts from the deepest existing parent
+  folder that fits, e.g. ["University", "Year 2", "Semester 1", "Computer Networks"].
 - For university work use folders like ["University", "Year 2", "Semester 1", "Database Systems"] when that information is in the text.
-- If one of the user's existing folders fits, reuse its exact names instead of inventing new ones.
 - Use only information found in the document. Reply with JSON only."""
+
+
+def _key(name: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", name.lower())
 
 
 class OpenAIAnalyzer:
@@ -62,7 +76,7 @@ class OpenAIAnalyzer:
                     ],
                 )
                 data = json.loads(response.choices[0].message.content or "{}")
-                return self._to_result(data, extension)
+                return self._to_result(data, extension, existing_folders)
             except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
                 log.warning("OpenAI returned unusable output (attempt %s): %s", attempt + 1, exc)
             except Exception as exc:  # network, rate limit, auth...
@@ -73,7 +87,7 @@ class OpenAIAnalyzer:
         result.model = "local-fallback"
         return result
 
-    def _to_result(self, data: dict, extension: str) -> AnalysisResult:
+    def _to_result(self, data: dict, extension: str, existing_folders: list[list[str]] | None = None) -> AnalysisResult:
         def text_field(key: str, limit: int, default: str = "") -> str:
             value = data.get(key, default)
             return str(value).strip()[:limit] if value is not None else default
@@ -85,8 +99,14 @@ class OpenAIAnalyzer:
         if category not in CATEGORIES:
             category = next((c for c in CATEGORIES if c.lower() == category.lower()), "Other")
         keywords = [str(k).strip()[:100] for k in (data.get("keywords") or []) if str(k).strip()][:8]
-        folder = [re.sub(r"[\\/]+", "-", str(p)).strip()[:150] for p in (data.get("suggested_folder_path") or [])]
-        folder = [p for p in folder if p][:6] or [category]
+        # If GPT picked one of the user's folders, use that folder exactly (its real spelling and depth).
+        existing = {tuple(_key(p) for p in path): path for path in (existing_folders or []) if path}
+        chosen = tuple(_key(p) for p in str(data.get("existing_folder") or "").split("/") if p.strip())
+        if chosen in existing:
+            folder = list(existing[chosen])
+        else:
+            folder = [re.sub(r"[\\/]+", "-", str(p)).strip()[:150] for p in (data.get("suggested_folder_path") or [])]
+            folder = [p for p in folder if p][:6] or [category]
         filename = safe_filename_part(text_field("suggested_filename", 120) or title, 80) or "Document"
         try:
             confidence = max(0.0, min(float(data.get("confidence", 0.5)), 1.0))
@@ -103,4 +123,5 @@ class OpenAIAnalyzer:
             suggested_folder_path=folder,
             confidence=round(confidence, 4),
             model=self.name,
+            folder_reason=text_field("folder_reason", 300),
         )

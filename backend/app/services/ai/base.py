@@ -16,6 +16,7 @@ class AnalysisResult:
     suggested_filename: str = ""
     suggested_folder_path: list[str] = field(default_factory=list)
     confidence: float = 0.0
+    folder_reason: str = ""   # why the AI chose this folder (shown on the review page)
     model: str = "local"
 
     def to_dict(self) -> dict:

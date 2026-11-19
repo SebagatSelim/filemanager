@@ -6,9 +6,15 @@ For a newly analysed document we give every folder the user already has a score 
         + 0.35 x folder name match   folder name words found in the title, subject, keywords or category
         + 0.25 x AI path match       the folder is the AI's folder, has the same name, or is a parent of it
 
+When GPT analysed the document (AI_PROVIDER=openai) it has read the whole text AND the user's folder
+list and picked a folder itself, so its choice counts most:
+
+  score = 0.25 x similar documents + 0.15 x folder name match + 0.60 x AI path match
+
 The AI analyser can also suggest a brand-new folder path. That option gets a fixed score
-(NEW_FOLDER_SCORE), so an existing folder is recommended first whenever it fits at least that well.
-The best 3 options are returned with a short reason the user can read.
+(NEW_FOLDER_SCORE, or GPT_NEW_FOLDER_SCORE for GPT), so an existing folder is recommended first
+whenever it fits at least that well.
+The best 3 options are returned with a short reason the user can read (GPT's own reason when it has one).
 """
 import re
 
@@ -23,7 +29,9 @@ from .index import cosine_scores, get_index
 from .text import tokenize
 
 SIMILAR_WEIGHT, NAME_WEIGHT, AI_PATH_WEIGHT = 0.40, 0.35, 0.25
+GPT_WEIGHTS = (0.25, 0.15, 0.60)  # similar documents, folder name, AI path - when GPT chose the folder
 NEW_FOLDER_SCORE = 0.45   # an existing folder must score at least this to beat a new AI folder
+GPT_NEW_FOLDER_SCORE = 0.60
 MIN_SCORE = 0.15          # folders below this are not worth showing
 MIN_SIMILARITY = 0.25     # a stored document counts as "similar" from this cosine similarity
 
@@ -97,6 +105,9 @@ def recommend_folders(file: File, limit: int = 3) -> list[dict]:
     [{folder_id, path, score, reason, is_new}]   (folder_id is None for a new folder)."""
     meta = file.meta
     ai_path = clean_segments(meta.suggested_folder_path or "") if meta is not None else []
+    gpt = meta is not None and (meta.ai_model or "").startswith("openai")
+    gpt_reason = (meta.folder_reason or "").strip() if gpt else ""
+    similar_weight, name_weight, ai_weight = GPT_WEIGHTS if gpt else (SIMILAR_WEIGHT, NAME_WEIGHT, AI_PATH_WEIGHT)
     paths = folder_paths(file.user_id)
     words = _document_words(file)
     similar = _similar_documents_by_folder(file)
@@ -108,10 +119,13 @@ def recommend_folders(file: File, limit: int = 3) -> list[dict]:
         similar_score = min(1.0, matches[0][0] * 2) if matches else 0.0
         name_score, name_hits = _name_score(path, words)
         ai_score = _ai_path_score(path, ai_path)
-        score = SIMILAR_WEIGHT * similar_score + NAME_WEIGHT * name_score + AI_PATH_WEIGHT * ai_score
+        score = similar_weight * similar_score + name_weight * name_score + ai_weight * ai_score
         if score < MIN_SCORE:
             continue
-        if matches:
+        if gpt and ai_score == 1.0:
+            reason = f"GPT read the document: {gpt_reason}" if gpt_reason else \
+                "GPT read the document and chose this folder"
+        elif matches:
             count = len(matches)
             reason = (f'{count} similar document{"s are" if count > 1 else " is"} already here, '
                       f'e.g. "{matches[0][1]}"')
@@ -126,8 +140,13 @@ def recommend_folders(file: File, limit: int = 3) -> list[dict]:
 
     ai_exists = any([_key(p) for p in path] == [_key(p) for p in ai_path] for path in paths.values())
     if ai_path and not ai_exists:
-        options.append({"folder_id": None, "path": ai_path, "score": NEW_FOLDER_SCORE,
-                        "reason": "New folder suggested by the AI from the document's content", "is_new": True})
+        if gpt:
+            reason = (f"New folder - GPT found no existing folder for this: {gpt_reason}" if gpt_reason
+                      else "New folder - GPT found no existing folder for this document")
+        else:
+            reason = "New folder suggested by the AI from the document's content"
+        options.append({"folder_id": None, "path": ai_path, "score": GPT_NEW_FOLDER_SCORE if gpt else NEW_FOLDER_SCORE,
+                        "reason": reason, "is_new": True})
 
     options.sort(key=lambda o: (o["score"], not o["is_new"]), reverse=True)
     return options[:limit]

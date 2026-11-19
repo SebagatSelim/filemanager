@@ -162,3 +162,50 @@ def test_upgrade_adds_new_columns_to_an_old_database(app):
         conn.execute(sa.text("ALTER TABLE files DROP COLUMN deleted_from_path"))
     assert upgrade_database() == ["added files.deleted_at", "added files.deleted_from_path"]
     assert upgrade_database() == []  # running it again changes nothing
+
+
+# ---------------------------------------------------------------- GPT folder choice
+def use_fake_gpt(client, reply: dict):
+    """Swap the app's analyser for the OpenAI one with a fake client that always gives `reply`."""
+    import json
+    from types import SimpleNamespace
+
+    from app.services.ai.openai_provider import OpenAIAnalyzer
+
+    def create(**kwargs):
+        return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(reply)))])
+
+    fake = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
+    client.application.extensions["analyzer"] = OpenAIAnalyzer("test-key", "gpt-test", 4000, client=fake)
+
+
+LAB = ("NIT2102 Database Systems\nLab 5: SQL joins and normalisation. Write SELECT queries with INNER JOIN "
+       "and LEFT JOIN on the Library database. Explain third normal form.")
+GPT_LAB = {"title": "SQL Lab 5", "summary": "Joins.", "category": "University", "subject": "Database Systems",
+           "document_type": "Lab Sheet", "keywords": ["SQL", "joins"], "suggested_filename": "SQL_Lab_5",
+           "confidence": 0.9}
+
+
+def test_gpt_choice_of_an_existing_folder_is_the_best_match_with_its_reason(client, auth):
+    add_and_approve(client, auth, "assignment.txt", ASSIGNMENT)
+    add_and_approve(client, auth, "invoice.txt", INVOICE)
+    use_fake_gpt(client, {**GPT_LAB, "existing_folder": "University/Year 2/Semester 1/Database Systems",
+                          "suggested_folder_path": [], "folder_reason": "It is a lab for the same course."})
+    file_id = upload(client, auth, "SQL_Lab.txt", LAB.encode()).get_json()["file_id"]
+    best = client.get(f"/api/documents/{file_id}/analysis", headers=auth).get_json()["folder_recommendations"][0]
+    assert best["path"] == ["University", "Year 2", "Semester 1", "Database Systems"]
+    assert best["is_new"] is False and best["score"] >= 0.6
+    assert best["reason"] == "GPT read the document: It is a lab for the same course."
+
+
+def test_gpt_new_folder_beats_a_folder_that_only_shares_words(client, auth):
+    add_and_approve(client, auth, "assignment.txt", ASSIGNMENT)
+    use_fake_gpt(client, {**GPT_LAB, "subject": "Computer Networks", "existing_folder": "",
+                          "suggested_folder_path": ["University", "Year 2", "Semester 1", "Computer Networks"],
+                          "folder_reason": "No folder for Computer Networks yet."})
+    lab = "Computer Networks lab: subnetting, TCP handshakes and routing tables for the university network." * 2
+    file_id = upload(client, auth, "Networks_Lab.txt", lab.encode()).get_json()["file_id"]
+    best = client.get(f"/api/documents/{file_id}/analysis", headers=auth).get_json()["folder_recommendations"][0]
+    assert best["is_new"] is True
+    assert best["path"] == ["University", "Year 2", "Semester 1", "Computer Networks"]
+    assert "No folder for Computer Networks yet." in best["reason"]

@@ -87,9 +87,10 @@ CREATE TABLE document_metadata (
   document_type           VARCHAR(100)   NULL,         -- e.g. Assignment, Invoice, Resume
   suggested_filename      VARCHAR(255)   NULL,
   suggested_folder_path   VARCHAR(500)   NULL,         -- e.g. University/Year 2/Semester 1/Database Systems
+  folder_reason           VARCHAR(300)   NULL,         -- the AI's one-line reason for that folder
   classification_confidence DECIMAL(5,4) NULL,         -- 0.0000 – 1.0000
   extracted_text          MEDIUMTEXT     NULL,         -- output of PyMuPDF / python-docx / Tesseract
-  extraction_method       ENUM('PYMUPDF','PYTHON_DOCX','TESSERACT_OCR','PLAIN_TEXT') NULL,
+  extraction_method       ENUM('PYMUPDF','PYTHON_DOCX','TESSERACT_OCR','PLAIN_TEXT','OPENAI_VISION') NULL,
   ai_model                VARCHAR(100)   NULL,         -- which model produced the suggestions
   duplicate_of_file_id    INT UNSIGNED   NULL,         -- closest existing copy found at upload (FR-07)
   duplicate_type          ENUM('EXACT','SIMILAR') NULL,

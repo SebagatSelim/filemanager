@@ -10,7 +10,7 @@ import logging
 import sqlalchemy as sa
 
 from .extensions import db
-from .models import FILE_STATUSES
+from .models import EXTRACTION_METHODS, FILE_STATUSES
 
 log = logging.getLogger(__name__)
 
@@ -18,6 +18,7 @@ log = logging.getLogger(__name__)
 NEW_COLUMNS = [
     ("files", "deleted_at", "DATETIME NULL"),
     ("files", "deleted_from_path", "VARCHAR(500) NULL"),
+    ("document_metadata", "folder_reason", "VARCHAR(300) NULL"),
 ]
 
 
@@ -40,6 +41,13 @@ def upgrade_database() -> list[str]:
                 values = ", ".join(f"'{s}'" for s in FILE_STATUSES)
                 conn.execute(sa.text(f"ALTER TABLE files MODIFY COLUMN status ENUM({values}) NOT NULL DEFAULT 'UPLOADED'"))
                 changes.append("added the DELETED file status")
+
+            # ...and the 'OPENAI_VISION' extraction method (scans read by GPT when Tesseract isn't installed).
+            method = next(c for c in inspector.get_columns("document_metadata") if c["name"] == "extraction_method")
+            if "OPENAI_VISION" not in getattr(method["type"], "enums", []):
+                values = ", ".join(f"'{m}'" for m in EXTRACTION_METHODS)
+                conn.execute(sa.text(f"ALTER TABLE document_metadata MODIFY COLUMN extraction_method ENUM({values}) NULL"))
+                changes.append("added the OPENAI_VISION extraction method")
     for change in changes:
         log.info("Database upgrade: %s", change)
     return changes
