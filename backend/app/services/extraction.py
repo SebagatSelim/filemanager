@@ -1,4 +1,8 @@
-"""Text extraction (FR-09): PyMuPDF, python-docx, Tesseract OCR and plain text."""
+"""Text extraction (FR-09): PyMuPDF, python-docx, OCR and plain text.
+
+OCR for photos and scanned PDF pages uses Tesseract when it is installed, otherwise GPT vision
+when OpenAI is switched on (services/ai/vision.py).
+"""
 import io
 import logging
 from functools import lru_cache
@@ -10,6 +14,7 @@ from .text import clean_text
 log = logging.getLogger(__name__)
 
 MIN_PAGE_TEXT = 25  # characters; below this a PDF page is treated as scanned
+VISION_MAX_PAGES = 10  # GPT vision reads at most this many scanned pages per PDF (time and cost)
 
 
 class ExtractionError(Exception):
@@ -29,8 +34,40 @@ def _ocr_available(tesseract_cmd: str) -> bool:
         return False
 
 
-def ocr_available() -> bool:
+def tesseract_available() -> bool:
     return _ocr_available(current_app.config.get("TESSERACT_CMD", ""))
+
+
+def ocr_provider() -> str | None:
+    """Who reads text from images and scans: 'tesseract', 'openai' (GPT vision) or None."""
+    from .ai.vision import vision_available
+
+    if tesseract_available():
+        return "tesseract"
+    if vision_available():
+        return "openai"
+    return None
+
+
+def ocr_available() -> bool:
+    return ocr_provider() is not None
+
+
+def _read_image_text(image, provider: str) -> str:
+    """OCR one image with Tesseract or GPT vision. Raises ExtractionError if GPT can't be reached."""
+    if provider == "tesseract":
+        return _ocr_image(image)
+    from .ai.vision import read_text
+
+    try:
+        return read_text(image)
+    except Exception as exc:
+        log.warning("GPT vision could not read the image: %s", exc)
+        raise ExtractionError("The text in this image couldn't be read right now (the AI service didn't answer). "
+                              "Please retry in a minute.") from exc
+
+
+METHOD_FOR = {"tesseract": "TESSERACT_OCR", "openai": "OPENAI_VISION"}
 
 
 def _prepare_for_ocr(image):
@@ -55,7 +92,8 @@ def _extract_pdf(data: bytes) -> tuple[str, str]:
     from PIL import Image
 
     max_pages = current_app.config.get("MAX_PDF_PAGES", 50)
-    can_ocr = ocr_available()
+    provider = ocr_provider()
+    can_ocr = provider is not None
     parts, ocr_pages, text_pages = [], 0, 0
     with fitz.open(stream=data, filetype="pdf") as pdf:
         for index, page in enumerate(pdf):
@@ -65,10 +103,10 @@ def _extract_pdf(data: bytes) -> tuple[str, str]:
             if len(text.strip()) >= MIN_PAGE_TEXT:
                 parts.append(text)
                 text_pages += 1
-            elif can_ocr:
+            elif can_ocr and (provider != "openai" or ocr_pages < VISION_MAX_PAGES):
                 pix = page.get_pixmap(dpi=200)
                 image = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
-                parts.append(_ocr_image(image))
+                parts.append(_read_image_text(image, provider))
                 ocr_pages += 1
             else:
                 parts.append(text)
@@ -78,7 +116,7 @@ def _extract_pdf(data: bytes) -> tuple[str, str]:
             "This PDF looks scanned (no text layer) and OCR is not installed on the server. "
             "Install Tesseract to read scanned documents, or enter the details manually."
         )
-    method = "TESSERACT_OCR" if ocr_pages > text_pages else "PYMUPDF"
+    method = METHOD_FOR[provider] if ocr_pages > text_pages else "PYMUPDF"
     return text, method
 
 
@@ -107,13 +145,14 @@ def _extract_txt(data: bytes) -> tuple[str, str]:
 def _extract_image(data: bytes) -> tuple[str, str]:
     from PIL import Image
 
-    if not ocr_available():
+    provider = ocr_provider()
+    if provider is None:
         raise ExtractionError(
             "OCR is not installed on the server, so text can't be read from images. "
             "Install Tesseract (see backend/README.md), or enter the details manually."
         )
     with Image.open(io.BytesIO(data)) as image:
-        return clean_text(_ocr_image(image)), "TESSERACT_OCR"
+        return clean_text(_read_image_text(image, provider)), METHOD_FOR[provider]
 
 
 _EXTRACTORS = {"PDF": _extract_pdf, "DOCX": _extract_docx, "TXT": _extract_txt, "PNG": _extract_image, "JPG": _extract_image}
