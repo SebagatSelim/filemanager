@@ -168,9 +168,11 @@ npm install
 3. Sign in with the demo account:
    - **Email:** `demo@fileai.test`
    - **Password:** `Demo@12345`
-   - **Verification code:** sign-in now has a second step (two-step verification). Until an email server is set up
-     (Part 12) the app runs in **demo mode** and shows the 6-digit code on the screen — click **Use it**, then
-     **Verify and sign in**. The code is also printed in the **FileAI API** window.
+   - **Verification code:** sign-in has a second step (two-step verification): a 6-digit code is **emailed**.
+     `demo@fileai.test` is not a real inbox, so once the email server is set up (Part 12) sign in with your own
+     email instead. To get the sample files in your own account run, in `backend`:
+     `flask --app run.py seed-demo --email you@gmail.com --password "YourPassw0rd!"`.
+     Only with `EMAIL_DEMO_MODE=true` and no email server is the code shown on screen (click **Use it**).
 
 **Manual way** (or on macOS) — use two terminals:
 
@@ -231,7 +233,7 @@ Practise this once before the presentation. Start the app (Part 5) and log in **
 
 | Time | Show | Say |
 |---|---|---|
-| 0:00 | Sign-in with the code | "Sign-in is two-step: after the password, a 6-digit code is emailed. Here it runs in demo mode, so the code is shown on screen." |
+| 0:00 | Sign-in with the code | "Sign-in is two-step: after the password, a 6-digit code is emailed. Only someone who can read that inbox can sign in." |
 | 0:30 | Home | "Like OneDrive, Home shows my folders and my recent files. I can rename, delete or ask the AI to summarise a folder." → click **AI summary** on *University* |
 | 1:00 | Upload Files → drop a new file | "When I upload a file, the backend checks it, extracts the text and runs our AI analysis in the background." |
 | 1:30 | Review page | "The AI recommends one of my **existing** folders and tells me why — here, a similar document is already in Database Systems. Nothing is saved until I approve." → **Approve & Save** |
@@ -265,8 +267,8 @@ Your data stays in MySQL and `backend/uploads/` for next time.
 | Image or scanned PDF shows *"OCR is not installed"* | Tesseract isn't installed | Expected without OCR. Install Tesseract (Part 12), or type the details in yourself and approve |
 | *"Too many failed sign-in attempts"* | Security lockout after 5 wrong passwords | Wait 5 minutes, or restart the backend window |
 | *"Your session has expired"* | Login lasts 30 minutes | Sign in again |
-| Where is my sign-in code? | No email server is set up (demo mode) | The code is shown on the sign-in page and printed in the **FileAI API** window. To send real emails see Part 12 |
-| *"We couldn't send the verification email"* | The SMTP settings in `backend\.env` are wrong | Check `SMTP_HOST`, `SMTP_USERNAME` and the Gmail **app password**, or empty `SMTP_HOST` to go back to demo mode |
+| Where is my sign-in code? | It is emailed (check the spam folder too) | *"The email server isn't set up"* means `SMTP_HOST` is empty in `backend\.env`: see Part 12 |
+| *"We couldn't send the verification email"* | The SMTP settings in `backend\.env` are wrong | Check `SMTP_HOST`, `SMTP_USERNAME` and the Gmail **app password**, then run `flask --app run.py send-test-email you@gmail.com` |
 | *"This code has expired"* / *"Too many wrong codes"* | Codes last 10 minutes and allow 5 tries | Click **Resend code** |
 | `Unknown column 'files.deleted_at'` | Database made by v0.1 | Restart the backend (it upgrades the database itself), or run `.venv\Scripts\python -m flask --app run.py init-db` once |
 | Demo account missing / want a clean start | — | In `backend`: `.venv\Scripts\python -m flask --app run.py init-db --drop` (type `y` to confirm — **deletes all data**), then `... seed-demo` |
@@ -337,8 +339,13 @@ All of these are switched on in `backend\.env`. **Restart the backend window aft
    SMTP_PASSWORD=the16characterapppassword
    ```
 
-3. Restart the backend. Codes are now emailed and are **no longer shown on screen**.
+   A hosting mailbox works too, e.g. Hostinger: `SMTP_HOST=smtp.hostinger.com`, `SMTP_PORT=465`,
+   `SMTP_USE_SSL=true`, the full email address as `SMTP_USERNAME`, and `MAIL_FROM="FileAI <that address>"`.
+   Put the password in single quotes if it has symbols: `SMTP_PASSWORD='p|a:s~s'`.
+3. Check it: `flask --app run.py send-test-email you@gmail.com` (in `backend`, with the venv on).
+4. Restart the backend. Codes are now emailed and are **never shown on screen**.
    To switch two-step verification off completely (not recommended): `TWO_FACTOR_ENABLED=false`.
+   Classroom demo with no email server at all: `EMAIL_DEMO_MODE=true` shows the code on screen instead.
 
 **OpenAI GPT instead of the built-in AI**
 

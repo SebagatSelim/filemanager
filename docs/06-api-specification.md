@@ -157,7 +157,7 @@ They email a 6-digit code and answer **202**:
 }
 ```
 
-`demo_code` is only present in **demo mode** (no `SMTP_HOST` configured), so the app can be shown without an email account.
+`demo_code` is only present in **demo mode** (`EMAIL_DEMO_MODE=true` and no `SMTP_HOST`). With an email server it is never sent; with neither, the request fails with `503 EMAIL_NOT_SET_UP`.
 
 | Endpoint | Body | Success |
 |---|---|---|

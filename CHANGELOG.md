@@ -2,6 +2,23 @@
 
 All notable changes to this project are recorded here. Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.3.0] — 2026-11-20
+
+Real email codes, GPT folder choice and GPT reading of scans.
+
+### Added
+- GPT chooses the folder: the OpenAI analyser gets the user's folder list and returns `existing_folder` (copied exactly) plus a one-line `folder_reason`. When GPT did the analysis its choice counts 60% in the folder ranking (similar documents 25%, folder name 15%) and its reason is shown on the review page. New column `document_metadata.folder_reason` (added automatically to older databases).
+- OCR without Tesseract: when OpenAI is on and Tesseract isn't installed, photos and scanned PDF pages (up to 10 per PDF) are read by GPT vision (`services/ai/vision.py`, extraction method `OPENAI_VISION`). `/health` reports `ocr_provider`; Settings → AI & Privacy shows it.
+- SMTP over SSL (port 465, `SMTP_USE_SSL`, on by default for 465) besides STARTTLS (587); emails get a proper `Message-ID` and `Date`. `flask --app run.py send-test-email <address>` checks the settings.
+- 16 new backend tests (115 in total).
+
+### Changed
+- Verification codes are only sent by email. Without an email server sign-up and sign-in fail with `503 EMAIL_NOT_SET_UP`; showing the code on screen needs `EMAIL_DEMO_MODE=true` and has no effect once `SMTP_HOST` is set.
+
+### Fixed
+- `flask init-db` could not create a missing MySQL database (`url.set(database=None)` kept the database name).
+- GPT could pick a folder about a different subject in the same semester (e.g. a Networks lab into Database Systems).
+
 ## [0.2.0] — 2026-11-17
 
 Changes asked for after the demonstration (product review + teacher's comments).

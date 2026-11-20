@@ -37,7 +37,7 @@ Upload ─► Validate ─► Extract / OCR ─► AI analysis ─► Metadata �
 
 | Feedback from the demonstration | What we built |
 |---|---|
-| Improve account registration / login security | **Two-step verification**: a 6-digit code is emailed at sign-up (the account is only created once the email is confirmed) and at every sign-in. Without an email server it runs in demo mode and shows the code on screen. |
+| Improve account registration / login security | **Two-step verification**: a 6-digit code is emailed at sign-up (the account is only created once the email is confirmed) and at every sign-in. Codes are only sent by email (Gmail or any SMTP mailbox, SSL or STARTTLS); they are never shown on screen. |
 | Interface similar to OneDrive | **OneDrive-style layout**: "+ Create or upload" button, **Home**, **My files** explorer (breadcrumb, list / tiles view, filter by name, ⋯ menu) and a **Recycle bin** with restore. |
 | Dashboard showing files and folders, search, rename, delete, summarise | **Home** now lists **Your folders** and **Recent files** (like OneDrive), with an AI search box. Files and folders can be **renamed**, **deleted** (to the Recycle bin) and any folder can be **summarised by AI**. |
 | Improve AI recommendation | When a file is uploaded the AI **suggests one of your existing folders** (by similar documents, folder names and its own analysis) and explains why; a new folder is only suggested when nothing fits. |
