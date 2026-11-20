@@ -13,6 +13,7 @@ export const DEFAULT_CONFIG = {
   ai_provider: null,
   embedding_provider: null,
   ocr_available: null,
+  ocr_provider: null, // 'tesseract' | 'openai' (GPT vision) | null
   storage_backend: null,
   max_upload_mb: DEFAULT_MAX_UPLOAD_MB,
   low_confidence_threshold: DEFAULT_LOW_CONFIDENCE_THRESHOLD,

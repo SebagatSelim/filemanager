@@ -16,6 +16,14 @@ import useLookups from '../hooks/useLookups';
 import { downloadDocument, openDocumentInNewTab } from '../utils/download';
 import { fileTypeLabel, isImageType, isInlinePreviewable, normaliseFileType } from '../utils/fileTypes';
 import { formatBytes, formatDate, formatPercent, humanize } from '../utils/format';
+
+const EXTRACTION_LABELS = {
+  PYMUPDF: 'PDF text',
+  PYTHON_DOCX: 'Word document text',
+  TESSERACT_OCR: 'Tesseract OCR',
+  PLAIN_TEXT: 'Plain text',
+  OPENAI_VISION: 'OpenAI vision (GPT read the image)',
+};
 import { displayPath, splitPath } from '../utils/folders';
 import { cleanSegments, filenameError, folderSegmentError, validateDocumentMetadata } from '../utils/validation';
 
@@ -534,7 +542,11 @@ export default function DocumentDetailsPage() {
                     </div>
                     <div>
                       <dt>Extraction method</dt>
-                      <dd>{doc.extraction_method ? humanize(doc.extraction_method) : '—'}</dd>
+                      <dd>
+                        {doc.extraction_method
+                          ? EXTRACTION_LABELS[doc.extraction_method] || humanize(doc.extraction_method)
+                          : '—'}
+                      </dd>
                     </div>
                     <div>
                       <dt>AI confidence</dt>

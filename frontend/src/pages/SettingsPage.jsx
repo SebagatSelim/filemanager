@@ -29,6 +29,8 @@ const PROVIDER_LABELS = {
 
 const STORAGE_LABELS = { local: 'Local disk on the server', s3: 'Amazon S3 (encrypted cloud storage)' };
 
+const OCR_LABELS = { tesseract: 'Tesseract OCR (runs on the FileAI server)', openai: 'OpenAI vision (GPT reads scans and photos)' };
+
 function ProfileForm({ profile, onSaved }) {
   const toast = useToast();
   const initial = { name: profile?.name || '', email: profile?.email || '' };
@@ -311,7 +313,8 @@ function StoragePanel({ profile }) {
 function AiPanel() {
   const { config, loading, error, reload } = useAppConfig();
   const providerLabel = (value) => (value ? PROVIDER_LABELS[value] || value : 'Unknown');
-  const openAiInUse = config.ai_provider === 'openai' || config.embedding_provider === 'openai';
+  const openAiInUse =
+    config.ai_provider === 'openai' || config.embedding_provider === 'openai' || config.ocr_provider === 'openai';
 
   if (error && config.status === 'unknown') {
     return <ErrorState compact title="Couldn't reach the server" message={error.message} onRetry={reload} />;
@@ -322,7 +325,12 @@ function AiPanel() {
     { label: 'Semantic search embeddings', value: providerLabel(config.embedding_provider), icon: 'bi-diagram-3' },
     {
       label: 'OCR for scans and images',
-      value: config.ocr_available === null ? 'Unknown' : config.ocr_available ? 'Available' : 'Not installed on the server',
+      value:
+        config.ocr_available === null
+          ? 'Unknown'
+          : !config.ocr_available
+            ? 'Not installed on the server'
+            : OCR_LABELS[config.ocr_provider] || 'Available',
       icon: 'bi-eye',
       tone: config.ocr_available === false ? 'text-warning-emphasis' : '',
     },
@@ -355,7 +363,8 @@ function AiPanel() {
         <i className="bi bi-shield-exclamation fs-5" aria-hidden="true" />
         <div className="small">
           <div className="fw-semibold mb-1">Privacy note</div>
-          If OpenAI is enabled, extracted text is sent to OpenAI for analysis.{' '}
+          If OpenAI is enabled, extracted text is sent to OpenAI for analysis
+          {config.ocr_provider === 'openai' ? ', and images of photos and scanned pages are sent to OpenAI to read their text' : ''}.{' '}
           {openAiInUse
             ? 'OpenAI is currently enabled on this server, so avoid uploading highly sensitive documents.'
             : 'This server currently uses local models, so your document text stays on the FileAI server.'}{' '}
