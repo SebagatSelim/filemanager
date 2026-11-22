@@ -2,6 +2,7 @@
 import logging
 
 from flask import jsonify
+from sqlalchemy.exc import InterfaceError, OperationalError
 from werkzeug.exceptions import HTTPException
 
 log = logging.getLogger(__name__)
@@ -55,6 +56,18 @@ def register_error_handlers(app):
         if status == 413:
             message = f"File is larger than the {app.config['MAX_UPLOAD_MB']} MB limit."
         return jsonify({"error": {"code": _HTTP_CODES.get(status, "HTTP_ERROR"), "message": message}}), status
+
+    @app.errorhandler(OperationalError)
+    @app.errorhandler(InterfaceError)
+    def _database_down(err: Exception):
+        # MySQL not running, wrong DATABASE_URL user/password, and similar: say so instead of "something went wrong".
+        log.error("Database error: %s\n  -> Is MySQL running? Check DATABASE_URL in backend/.env.", err.orig or err)
+        from .extensions import db
+
+        db.session.rollback()
+        return jsonify({"error": {"code": "DATABASE_UNAVAILABLE",
+                                  "message": "The server can't reach its database. Make sure MySQL is running, "
+                                             "then try again."}}), 503
 
     @app.errorhandler(Exception)
     def _unexpected(err: Exception):

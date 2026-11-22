@@ -22,6 +22,28 @@ NEW_COLUMNS = [
 ]
 
 
+def prepare_database() -> list[str]:
+    """Make the database ready to use: create it (MySQL) if it doesn't exist yet, then its tables/columns."""
+    create_mysql_database_if_missing()
+    return upgrade_database()
+
+
+def create_mysql_database_if_missing() -> None:
+    url = sa.engine.make_url(db.engine.url)
+    if not url.drivername.startswith("mysql") or not url.database:
+        return
+    # Connect to the server without choosing a database (url.set(database=None) would keep the name).
+    server_url = sa.engine.URL.create(url.drivername, username=url.username, password=url.password,
+                                      host=url.host, port=url.port, query=url.query)
+    server = sa.create_engine(server_url)
+    try:
+        with server.connect() as conn:
+            conn.execute(sa.text(
+                f"CREATE DATABASE IF NOT EXISTS `{url.database}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"))
+    finally:
+        server.dispose()
+
+
 def upgrade_database() -> list[str]:
     """Create missing tables/columns. Returns a list of the changes made."""
     db.create_all()

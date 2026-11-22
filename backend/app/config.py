@@ -50,7 +50,7 @@ class Config:
     OTP_MAX_ATTEMPTS = _int("OTP_MAX_ATTEMPTS", 5)
 
     # ---------- Email (for the codes) ----------
-    # Leave SMTP_HOST empty for DEMO MODE: the code is printed in the backend window and shown on screen.
+    # Set SMTP_HOST to email the codes. Left empty, the app runs in DEMO MODE (see EMAIL_DEMO_MODE).
     # Gmail example: SMTP_HOST=smtp.gmail.com, SMTP_PORT=587, SMTP_USERNAME=you@gmail.com,
     #                SMTP_PASSWORD=<16-character app password>
     # Hostinger example: SMTP_HOST=smtp.hostinger.com, SMTP_PORT=465 (SSL) or 587 (STARTTLS)
@@ -63,8 +63,8 @@ class Config:
     # STARTTLS upgrade after connecting (port 587). Ignored when SMTP_USE_SSL is on.
     SMTP_USE_TLS = _bool("SMTP_USE_TLS", True)
     MAIL_FROM = os.getenv("MAIL_FROM", "") or os.getenv("SMTP_USERNAME", "") or "FileAI <no-reply@fileai.local>"
-    # Only for a classroom demo with no email server: show the code on screen instead of emailing it.
-    # Off by default, so codes only ever go to the user's inbox. Has no effect once SMTP_HOST is set.
+    # Codes are only ever emailed. EMAIL_DEMO_MODE=true (off by default) is only for a demo with no email
+    # server: the code is then shown on screen instead. Has no effect once SMTP_HOST is set.
     EMAIL_DEMO_MODE = _bool("EMAIL_DEMO_MODE", False)
 
     # ---------- Database ----------
@@ -92,9 +92,10 @@ class Config:
     MAX_PDF_PAGES = _int("MAX_PDF_PAGES", 50)
 
     # ---------- AI ----------
-    AI_PROVIDER = os.getenv("AI_PROVIDER", "local")  # local | openai
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
+    # local | openai. Left empty: OpenAI when OPENAI_API_KEY is set, otherwise the local analyser.
+    AI_PROVIDER = (os.getenv("AI_PROVIDER") or "").strip().lower() or ("openai" if OPENAI_API_KEY else "local")
     EMBEDDING_PROVIDER = os.getenv("EMBEDDING_PROVIDER", "local")  # local | openai | sentence-transformers
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
     OPENAI_MODEL = os.getenv("OPENAI_MODEL") or "gpt-4o-mini"
     OPENAI_EMBEDDING_MODEL = os.getenv("OPENAI_EMBEDDING_MODEL") or "text-embedding-3-small"
     SENTENCE_TRANSFORMER_MODEL = os.getenv("EMBEDDING_MODEL") or "sentence-transformers/all-MiniLM-L6-v2"

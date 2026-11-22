@@ -54,24 +54,28 @@ def _register_jwt_errors() -> None:
 
 
 def _upgrade_database_once(app: Flask) -> None:
-    """On the first request, add any new columns to a database made by an older version (see upgrade.py)."""
+    """Before the first request, create the database and its tables if they are missing, and add new
+    columns to a database made by an older version (see upgrade.py). If MySQL isn't running yet,
+    it tries again on the next request, so starting MySQL after the backend still works."""
     if app.config.get("TESTING"):
         return
     lock = threading.Lock()
-    done = []
 
     @app.before_request
     def _upgrade():
+        if app.extensions.get("fileai_db_ready"):
+            return
         with lock:
-            if done:
+            if app.extensions.get("fileai_db_ready"):
                 return
-            done.append(True)
-            from .upgrade import upgrade_database
+            from .upgrade import prepare_database
 
             try:
-                upgrade_database()
-            except Exception:
-                app.logger.exception("Could not upgrade the database. Run: flask --app run.py init-db")
+                prepare_database()
+                app.extensions["fileai_db_ready"] = True
+            except Exception as exc:
+                app.logger.error("Database not ready: %s -> Is MySQL running? Check DATABASE_URL in backend/.env.",
+                                 getattr(exc, "orig", None) or exc)
 
 
 def _resume_unfinished_work_once(app: Flask) -> None:
@@ -79,18 +83,22 @@ def _resume_unfinished_work_once(app: Flask) -> None:
     if app.config["PROCESSING_MODE"] != "thread":
         return
     done = threading.Event()
+    lock = threading.Lock()
 
     @app.before_request
     def _resume():
-        if done.is_set():
-            return
-        done.set()
-        from .services.pipeline import requeue_stuck_jobs
+        if done.is_set() or not app.extensions.get("fileai_db_ready"):
+            return  # wait until the database works (see _upgrade_database_once)
+        with lock:
+            if done.is_set():
+                return
+            done.set()
+            from .services.pipeline import requeue_stuck_jobs
 
-        try:
-            requeue_stuck_jobs()
-        except Exception:
-            app.logger.exception("Could not re-queue unfinished documents")
+            try:
+                requeue_stuck_jobs()
+            except Exception:
+                app.logger.exception("Could not re-queue unfinished documents")
 
 
 def _security_headers(app: Flask) -> None:

@@ -174,8 +174,8 @@ def test_email_failure_is_reported_to_the_user(client, monkeypatch):
 
 
 
-def test_without_an_email_server_the_code_is_never_shown(client, fake_smtp):
-    """EMAIL_DEMO_MODE is off by default: no email server means an error, never a code on screen."""
+def test_without_an_email_server_or_demo_mode_the_code_is_never_shown(client, fake_smtp):
+    """EMAIL_DEMO_MODE=false (a real server): no email server means an error, never a code on screen."""
     client.application.config.update(SMTP_HOST="", EMAIL_DEMO_MODE=False)
     res = start_register(client)
     assert res.status_code == 503 and res.get_json()["error"]["code"] == "EMAIL_NOT_SET_UP"

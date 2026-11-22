@@ -45,7 +45,7 @@ All settings come from `.env` (see [`.env.example`](.env.example) for every opti
 |---|---|---|
 | `DATABASE_URL` | `mysql+pymysql://root:@127.0.0.1:3306/file_organizer` | Any SQLAlchemy URL |
 | `STORAGE_BACKEND` | `local` | `local` saves to `backend/uploads/`; `s3` uses `S3_BUCKET_NAME` and AWS credentials |
-| `AI_PROVIDER` | `local` | `openai` uses GPT (needs `OPENAI_API_KEY`), with automatic fallback to local |
+| `AI_PROVIDER` | *(empty)* | Empty = `openai` when `OPENAI_API_KEY` is set, else `local`. `openai` uses GPT with automatic fallback to local |
 | `EMBEDDING_PROVIDER` | `local` | `openai` or `sentence-transformers` for true semantic search; run `flask --app run.py reindex` after changing |
 | `TESSERACT_CMD` | *(empty)* | Path to `tesseract.exe` if it is not on PATH |
 | `MAX_UPLOAD_MB` | `20` | Per-file limit |
