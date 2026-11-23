@@ -148,6 +148,23 @@ You need **Python 3.11+**, **Node.js 20+** and **MySQL 8** (Laragon or XAMPP is 
 3. Double-click **`start-dev.bat`** — starts both servers and opens <http://localhost:5173>.
 4. Sign in with **demo@fileai.test** / **Demo@12345**.
 
+### Quick start on macOS / Linux
+
+1. Start MySQL (`brew services start mysql`, or XAMPP / MAMP).
+2. In a terminal in the project folder: **`./setup.sh`** once.
+3. Then **`./start-dev.sh`** — starts both servers (the API uses port 5001 on macOS, because AirPlay uses 5000) and opens <http://localhost:5173>.
+4. Sign in with **demo@fileai.test** / **Demo@12345**.
+
+### What works straight after cloning
+
+`backend/.env` holds passwords and keys, so it is **not** in Git. Without it the app still runs:
+
+- **Sign-in codes:** only ever emailed, never shown on screen. Put the `SMTP_*` settings in `backend/.env`; without them sign-up and sign-in stop with "the email server isn't set up". `demo@fileai.test` is not a real inbox: move it to yours with `flask --app run.py change-email demo@fileai.test you@gmail.com`.
+- **AI:** the built-in local analyser. Put `OPENAI_API_KEY=...` in `backend/.env` to use GPT for analysis, folder choice and reading scans/photos.
+- **Database:** created automatically on first start, if MySQL is running.
+
+Settings pasted above or below the template lines both count. When the backend starts it prints a short report of what it found — read it first if something doesn't work. Share keys privately (never commit them: this repository is public and OpenAI switches off keys published on GitHub).
+
 ### Manual setup
 
 **1. Start MySQL** (e.g. *Start All* in Laragon).
@@ -180,7 +197,7 @@ npm run dev
 Optional extras:
 
 - **OCR for scans and photos:** install [Tesseract](https://github.com/UB-Mannheim/tesseract/wiki) and set `TESSERACT_CMD` in `backend/.env`.
-- **OpenAI GPT analysis:** set `AI_PROVIDER=openai` and `OPENAI_API_KEY` in `backend/.env`.
+- **OpenAI GPT analysis:** set `OPENAI_API_KEY` in `backend/.env` (GPT is used automatically when a key is set).
 - **AWS S3 storage:** set `STORAGE_BACKEND=s3`, `S3_BUCKET_NAME` and AWS credentials.
 
 Details: [Backend README](backend/README.md) · [Frontend README](frontend/README.md)
@@ -188,7 +205,7 @@ Details: [Backend README](backend/README.md) · [Frontend README](frontend/READM
 ## Running the tests
 
 ```bash
-cd backend && pytest --cov=app        # 99 tests, no MySQL needed
+cd backend && pytest --cov=app        # 120 tests, no MySQL needed
 cd frontend && npm run test:run       # 93 component and helper tests (Vitest)
 ```
 

@@ -2,6 +2,36 @@
 
 All notable changes to this project are recorded here. Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.3.2] — 2026-11-22
+
+### Changed
+- Sign-in codes are only emailed again, never shown on screen: `EMAIL_DEMO_MODE` defaults to `false` (as in 0.3.0).
+
+### Added
+- `flask --app run.py change-email OLD NEW` moves an account (e.g. `demo@fileai.test`) to a real inbox, keeping its password and documents.
+- `backend/settings_files.py`: settings pasted above or below the template lines both count (a typed value beats the `.env.example` value, which beats an empty one), also when `flask run` already loaded the file; values from a second `.env` fill the gaps.
+
+### Fixed
+- Email over SSL failed on macOS with python.org Python (no root certificates): the SMTP connection also trusts `certifi`'s certificates.
+
+## [0.3.1] — 2026-11-22
+
+A fresh clone works without any setup (problems reported by students on macOS).
+
+### Added
+- `setup.sh` and `start-dev.sh` for macOS / Linux (the API runs on port 5001 on macOS, where AirPlay uses 5000).
+- Startup report: when the backend starts it prints which settings file it read, whether the database works, how sign-in codes are delivered, and which AI / OCR is in use, with what to do about anything missing.
+- 5 new backend tests (120 in total).
+
+### Changed
+- Without an email server, sign-up and sign-in work in demo mode again (code shown on screen and printed in the backend window): `EMAIL_DEMO_MODE` now defaults to `true`. It still has no effect once `SMTP_HOST` is set; set `EMAIL_DEMO_MODE=false` on a real server.
+- `AI_PROVIDER` left empty means OpenAI when `OPENAI_API_KEY` is set, otherwise local — adding the key is enough.
+- The backend also reads `.env` from the project folder or `backend/.env.txt` (common mistakes), and says so.
+- The MySQL database and its tables are created on first start if missing (no `init-db` needed); if MySQL isn't running yet it retries on the next request.
+
+### Fixed
+- Database problems (MySQL not running, wrong password, missing database) showed "Something went wrong on the server"; they now answer `503 DATABASE_UNAVAILABLE` with a clear message and a one-line hint in the backend window.
+
 ## [0.3.0] — 2026-11-20
 
 Real email codes, GPT folder choice and GPT reading of scans.
